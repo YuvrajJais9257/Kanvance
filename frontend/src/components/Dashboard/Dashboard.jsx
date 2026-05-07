@@ -93,7 +93,7 @@ export default function Dashboard() {
   return (
     <div>
       <Sidebar />
-      <div className={styles.dashboard} style={{ marginLeft: "260px" }}>
+      <div className={styles.dashboard}>
 
         {/* Header */}
         <div className={styles.header}>

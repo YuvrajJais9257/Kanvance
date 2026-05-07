@@ -3,6 +3,13 @@
   background: #0b0f16;
   color: #d6dbe6;
   font-family: 'DM Sans', 'Inter', sans-serif;
+  margin-left: 260px;
+}
+
+@media (max-width: 900px) {
+  .page {
+    margin-left: 0;
+  }
 }
 
 /* ── Header ─────────────────────────────────────────────── */
@@ -63,11 +70,18 @@
   padding: 20px;
   cursor: pointer;
   transition: border-color 0.15s, background 0.15s;
+  box-shadow: 0 14px 34px rgba(0,0,0,0.18);
 }
 
 .card:hover {
   border-color: rgba(90,140,255,0.3);
   background: #1a2030;
+  box-shadow: 0 18px 50px rgba(0,0,0,0.28);
+}
+
+.card:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(103, 160, 255, 0.35);
 }
 
 .cardHeader {

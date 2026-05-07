@@ -86,6 +86,15 @@ const Sidebar = () => {
               key={path}
               className={`${styles.menuItem} ${location.pathname === path ? styles.active : ""}`}
               onClick={() => navigate(path)}
+              role="button"
+              tabIndex={0}
+              aria-current={location.pathname === path ? "page" : undefined}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  navigate(path);
+                }
+              }}
             >
               {label}
             </div>
@@ -100,6 +109,14 @@ const Sidebar = () => {
               style={{ position: "relative", cursor: "pointer" }}
               onClick={() => setShowPicker((v) => !v)}
               title="Click to change your status"
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  setShowPicker((v) => !v);
+                }
+              }}
             >
               <span className={styles.userAvatar}>{user.name?.[0]?.toUpperCase() ?? "?"}</span>
               <div className={styles.userInfo}>

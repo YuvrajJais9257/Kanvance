@@ -66,7 +66,22 @@ function StatusBadge({ status, onSelect }) {
   }, [open]);
 
   return (
-    <div ref={ref} className={styles.statusBadgeWrap} onClick={(e) => e.stopPropagation()}>
+    <div
+      ref={ref}
+      className={styles.statusBadgeWrap}
+      onClick={(e) => e.stopPropagation()}
+      role="button"
+      tabIndex={0}
+      aria-haspopup="listbox"
+      aria-expanded={open}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          e.stopPropagation();
+          setOpen((o) => !o);
+        }
+      }}
+    >
       <span
         className={styles.statusBadge}
         style={{ background: color + "22", color, border: `1px solid ${color}55` }}
@@ -81,7 +96,17 @@ function StatusBadge({ status, onSelect }) {
               key={s.label}
               className={styles.statusOption}
               style={{ color: s.color }}
+              role="option"
+              tabIndex={0}
               onClick={() => { onSelect(s.label); setOpen(false); }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onSelect(s.label);
+                  setOpen(false);
+                }
+              }}
             >
               <span className={styles.statusDot} style={{ background: s.color }} />
               {s.label}
@@ -113,6 +138,15 @@ function AssigneeChip({ assigneeId, assigneeName, team, onSelect }) {
         className={`${styles.assigneeChip} ${!assigneeName ? styles.assigneeChipEmpty : ""}`}
         title={assigneeName ?? "Assign"}
         onClick={() => setOpen((o) => !o)}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            e.stopPropagation();
+            setOpen((o) => !o);
+          }
+        }}
       >
         {initials}
       </span>
@@ -123,6 +157,16 @@ function AssigneeChip({ assigneeId, assigneeName, team, onSelect }) {
               key={m.id}
               className={`${styles.assigneeOption} ${m.id === assigneeId ? styles.assigneeOptionActive : ""}`}
               onClick={() => { onSelect(m.id); setOpen(false); }}
+              role="option"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onSelect(m.id);
+                  setOpen(false);
+                }
+              }}
             >
               <span className={styles.assigneeAvatar}>{m.name[0]}</span>
               {m.name}
@@ -132,6 +176,16 @@ function AssigneeChip({ assigneeId, assigneeName, team, onSelect }) {
             <div
               className={`${styles.assigneeOption} ${styles.unassignOption}`}
               onClick={() => { onSelect(null); setOpen(false); }}
+              role="option"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onSelect(null);
+                  setOpen(false);
+                }
+              }}
             >
               Unassign
             </div>
@@ -147,7 +201,16 @@ function FlagIcon({ flagged, title, onClick }) {  return (
     <span
       className={`${styles.flagIcon} ${flagged ? styles.flagIconActive : ""}`}
       title={title}
+      role="button"
+      tabIndex={0}
       onClick={(e) => { e.stopPropagation(); onClick(); }}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          e.stopPropagation();
+          onClick();
+        }
+      }}
     >
       ⚑
     </span>
@@ -629,7 +692,7 @@ const Projects = () => {
   return (
     <div>
       <Sidebar />
-      <div className={styles.page} style={{ marginLeft: "260px" }}>
+      <div className={styles.page}>
 
         {/* Header */}
         <div className={styles.header}>
@@ -694,7 +757,19 @@ const Projects = () => {
               return (
                 <div key={project.id} className={styles.card}>
                   {/* Card header row */}
-                  <div className={styles.cardTop} onClick={() => toggleProject(project.id)}>
+                  <div
+                    className={styles.cardTop}
+                    onClick={() => toggleProject(project.id)}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        toggleProject(project.id);
+                      }
+                    }}
+                    aria-label={`Expand project ${project.customer_name}`}
+                  >
                     <div className={styles.customerCol}>
                       <div className={styles.customerName}>{project.customer_name}</div>
                       <div className={styles.customerSub}>{project.subtitle}</div>
@@ -755,11 +830,23 @@ const Projects = () => {
                           return (
                             <div key={group.id} className={styles.taskCard}>
                               {/* Group header — F2.10 pencil, F2.12 delete */}
-                              <div className={styles.taskHeader}
+                              <div
+                                className={styles.taskHeader}
                                 onClick={() => {
                                   if (isEditingThisGroup) return;
                                   toggleTaskCollapse(project.id, group.id);
-                                }}>
+                                }}
+                                role="button"
+                                tabIndex={0}
+                                onKeyDown={(e) => {
+                                  if (isEditingThisGroup) return;
+                                  if (e.key === "Enter" || e.key === " ") {
+                                    e.preventDefault();
+                                    toggleTaskCollapse(project.id, group.id);
+                                  }
+                                }}
+                                aria-label={`Toggle phase ${group.name}`}
+                              >
                                 <div className={styles.taskTitleRow}>
                                   {isEditingThisGroup ? (
                                     // F2.10/F2.11 — inline rename input
@@ -838,7 +925,17 @@ const Projects = () => {
                                             {/* Checkbox */}
                                             <span
                                               className={`${styles.checkbox} ${isDone ? styles.checkboxDone : ""}`}
+                                              role="checkbox"
+                                              aria-checked={isDone}
+                                              tabIndex={0}
                                               onClick={(e) => { e.stopPropagation(); toggleSubtask(project.id, subtask.id, subtask.status); }}
+                                              onKeyDown={(e) => {
+                                                if (e.key === "Enter" || e.key === " ") {
+                                                  e.preventDefault();
+                                                  e.stopPropagation();
+                                                  toggleSubtask(project.id, subtask.id, subtask.status);
+                                                }
+                                              }}
                                             >
                                               {isDone ? "✓" : ""}
                                             </span>
@@ -923,7 +1020,19 @@ const Projects = () => {
                                             <span
                                               className={`${styles.attachIcon} ${attachPanel === subtask.id ? styles.attachIconActive : ""}`}
                                               title="Attachments"
-                                              onClick={(e) => { e.stopPropagation(); toggleAttachPanel(subtask.id, project.customer_id); }}
+                                              role="button"
+                                              tabIndex={0}
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                toggleAttachPanel(subtask.id, project.customer_id);
+                                              }}
+                                              onKeyDown={(e) => {
+                                                if (e.key === "Enter" || e.key === " ") {
+                                                  e.preventDefault();
+                                                  e.stopPropagation();
+                                                  toggleAttachPanel(subtask.id, project.customer_id);
+                                                }
+                                              }}
                                             >📎</span>
                                           </div>
 
@@ -1249,6 +1358,15 @@ const Projects = () => {
                         key={item.id}
                         className={styles.pickerItem}
                         onClick={() => handlePickerAttach(item.id)}
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handlePickerAttach(item.id);
+                          }
+                        }}
                       >
                         <span className={styles.pickerItemIcon}>
                           {pickerModal.type === "doc" ? "📄" : "🖥"}

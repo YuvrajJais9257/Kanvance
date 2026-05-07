@@ -1,5 +1,38 @@
-*{
-  padding: 0px;
-  margin: 0px;
+/* Global base styles (kept intentionally small, app uses CSS Modules) */
+:root {
+  color-scheme: dark;
+}
+
+* {
+  padding: 0;
+  margin: 0;
+  box-sizing: border-box;
   font-family: 'DM Sans', sans-serif;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  background: #0b0f16;
+  color: #e2e8f0;
+  line-height: 1.4;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+a {
+  color: inherit;
+}
+
+/* Accessible focus ring for keyboard users */
+:focus-visible {
+  outline: 2px solid #67a0ff;
+  outline-offset: 2px;
 }

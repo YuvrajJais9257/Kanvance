@@ -86,7 +86,7 @@ export default function MyTasks() {
   return (
     <div>
       <Sidebar />
-      <div className={styles.page} style={{ marginLeft: "260px" }}>
+      <div className={styles.page}>
 
         {/* Header */}
         <div className={styles.header}>
@@ -149,6 +149,14 @@ export default function MyTasks() {
                   className={styles.projectName}
                   onClick={() => navigate("/", { state: { expandedProjectId: proj.project_id } })}
                   title="Open in Projects"
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      navigate("/", { state: { expandedProjectId: proj.project_id } });
+                    }
+                  }}
                 >
                   {proj.customer_name}
                   <span className={styles.projectArrow}>→</span>

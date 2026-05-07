@@ -3,6 +3,13 @@
   background: #0b0f16;
   color: #d6dbe6;
   font-family: 'DM Sans', 'Inter', sans-serif;
+  margin-left: 260px;
+}
+
+@media (max-width: 900px) {
+  .page {
+    margin-left: 0;
+  }
 }
 
 /* ── Header ─────────────────────────────────────────────── */
@@ -131,6 +138,12 @@
 
 .projectName:hover { color: #7aa8ff; }
 
+.projectName:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(103, 160, 255, 0.35);
+  border-radius: 8px;
+}
+
 .projectArrow {
   font-size: 14px;
   opacity: 0.7;
@@ -153,10 +166,12 @@
   border-radius: 10px;
   padding: 12px 16px;
   transition: border-color 0.15s;
+  box-shadow: 0 10px 26px rgba(0,0,0,0.16);
 }
 
 .taskRow:hover {
   border-color: rgba(255,255,255,0.1);
+  box-shadow: 0 14px 34px rgba(0,0,0,0.24);
 }
 
 /* Urgency states — F3.10 */

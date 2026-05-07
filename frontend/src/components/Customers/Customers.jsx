@@ -243,7 +243,7 @@ export default function Customers() {
   return (
     <div>
       <Sidebar />
-      <div className={styles.page} style={{ marginLeft: "260px" }}>
+      <div className={styles.page}>
 
         {/* Header */}
         <div className={styles.header}>
@@ -264,7 +264,20 @@ export default function Customers() {
         ) : (
           <div className={styles.grid}>
             {customers.map((c) => (
-              <div key={c.id} className={styles.card} onClick={() => openDrawer(c.id)}>
+              <div
+                key={c.id}
+                className={styles.card}
+                onClick={() => openDrawer(c.id)}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    openDrawer(c.id);
+                  }
+                }}
+                aria-label={`Open customer ${c.name}`}
+              >
                 <div className={styles.cardHeader}>
                   <div className={styles.customerInitial}>
                     {c.name[0].toUpperCase()}

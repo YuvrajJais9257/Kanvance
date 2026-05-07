@@ -1,0 +1,141 @@
+const express      = require("express");
+const cors         = require("cors");
+const session      = require("express-session");
+const rateLimit    = require("express-rate-limit");
+const path         = require("path");
+const fs           = require("fs");
+require("dotenv").config();
+
+const pool            = require("./src/config/db");
+const errorMiddleware = require("./src/middlewares/error.middleware");
+const requireAuth     = require("./src/middlewares/requireAuth");
+
+const app = express();
+
+const isProd = process.env.NODE_ENV === "production";
+
+// S-6: Fail fast if SESSION_SECRET is not set in production
+if (isProd && !process.env.SESSION_SECRET) {
+  console.error("❌  SESSION_SECRET environment variable must be set in production");
+  process.exit(1);
+}
+
+/* ── CORS ────────────────────────────────────────────────────── */
+const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
+app.use(cors({ origin: FRONTEND_URL, credentials: true }));
+
+app.use(express.json());
+
+/* ── S-2: Rate limiting on auth endpoints ────────────────────── */
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 20,                   // max 20 attempts per window per IP
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Too many attempts. Please try again in 15 minutes." },
+});
+
+/* ── Session ─────────────────────────────────────────────────── */
+app.use(session({
+  name:   "cyberark.sid",
+  secret: process.env.SESSION_SECRET || "dev_secret_change_in_production",
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    httpOnly: true,
+    secure:   isProd,
+    sameSite: isProd ? "strict" : "lax",
+    maxAge:   8 * 60 * 60 * 1000, // 8 hours
+  },
+}));
+
+/* ── DB health check ─────────────────────────────────────────── */
+(async () => {
+  try {
+    const conn = await pool.getConnection();
+    console.log("✅  MySQL connected");
+    conn.release();
+  } catch (err) {
+    console.error("❌  DB connection error:", err.message);
+  }
+})();
+
+/* ── Public routes ───────────────────────────────────────────── */
+app.get("/", (req, res) => res.send("CyberArk Practice Tracker API"));
+
+// Apply rate limiter to auth routes (S-2)
+app.use("/api/auth", authLimiter, require("./src/routers/auth.routes"));
+
+/* ── Dev-only migration endpoint ─────────────────────────────── */
+if (!isProd) {
+  app.post("/api/migrate", async (req, res, next) => {
+    try {
+      const [cols] = await pool.execute(
+        `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+         WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'users' AND COLUMN_NAME = 'password_hash'`,
+        [process.env.DB_NAME]
+      );
+      if (cols.length === 0) {
+        await pool.execute(
+          `ALTER TABLE users ADD COLUMN password_hash VARCHAR(255) DEFAULT NULL`
+        );
+      }
+      res.json({ migrated: true, added: cols.length === 0 });
+    } catch (err) { next(err); }
+  });
+}
+
+/* ── Auth guard — all routes below require a valid session ───── */
+app.use("/api", requireAuth);
+
+/* ── S-3: Protected file serving (auth required) ─────────────── */
+// Replaces the old express.static("/uploads") which was publicly accessible.
+app.get("/uploads/:customerId/:filename", requireAuth, (req, res) => {
+  const { customerId, filename } = req.params;
+  // Sanitize: only allow safe characters to prevent path traversal
+  if (!/^\d+$/.test(customerId) || !/^[\w\-. ]+$/.test(filename)) {
+    return res.status(400).json({ error: "Invalid path" });
+  }
+  const filePath = path.join(__dirname, "uploads", customerId, filename);
+  if (!fs.existsSync(filePath)) {
+    return res.status(404).json({ error: "File not found" });
+  }
+  res.sendFile(filePath);
+});
+
+/* ── Protected routes ────────────────────────────────────────── */
+app.use("/api/team",       require("./src/routers/team.routes"));
+app.use("/api/customers",  require("./src/routers/customer.routes"));
+app.use("/api/projects",   require("./src/routers/project.routes"));
+app.use("/api/groups",     require("./src/routers/group.routes"));
+app.use("/api/subtasks",   require("./src/routers/subtask.routes"));
+app.use("/api/contacts",   require("./src/routers/contact.routes"));
+app.use("/api/documents",  require("./src/routers/document.routes"));
+app.use("/api/infra",      require("./src/routers/infra.routes"));
+app.use("/api/dashboard",  require("./src/routers/dashboard.routes"));
+app.use("/api/my-tasks",     require("./src/routers/myTasks.routes"));
+app.use("/api/availability", require("./src/routers/availability.routes"));
+
+/* ── Dev-only seed endpoint ──────────────────────────────────── */
+if (!isProd) {
+  app.post("/api/seed", requireAuth, async (req, res, next) => {
+    try {
+      const sql = fs.readFileSync(path.join(__dirname, "seed.sql"), "utf8");
+      const statements = sql
+        .split(";")
+        .map((s) => s.trim())
+        .filter((s) => s.length > 0 && !s.startsWith("--"));
+      for (const stmt of statements) {
+        await pool.execute(stmt);
+      }
+      res.json({ seeded: true });
+    } catch (err) { next(err); }
+  });
+}
+
+/* ── Global error handler ────────────────────────────────────── */
+app.use(errorMiddleware);
+
+/* ── Start ───────────────────────────────────────────────────── */
+const PORT = process.env.PORT || 4000;
+app.listen(PORT, () => console.log(`🚀  Server on port ${PORT}`));

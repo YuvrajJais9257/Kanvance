@@ -1,0 +1,134 @@
+.page {
+  min-height: 100vh;
+  background: #0b0f16;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  font-family: 'DM Sans', 'Inter', sans-serif;
+}
+
+.card {
+  width: min(420px, 100%);
+  background: #111723;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 20px;
+  padding: 40px 36px;
+  box-shadow: 0 32px 80px rgba(0,0,0,0.5);
+}
+
+/* ── Logo ─────────────────────────────────────────────────── */
+.logo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 32px;
+}
+
+.logoText {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: 2px;
+  color: #4f83ff;
+}
+
+.logoSub {
+  font-size: 12px;
+  color: #475569;
+  letter-spacing: 0.5px;
+  margin-top: 4px;
+  font-family: "SFMono-Regular", Consolas, monospace;
+}
+
+/* ── Heading ─────────────────────────────────────────────── */
+.title {
+  margin: 0 0 6px;
+  font-size: 24px;
+  font-weight: 700;
+  color: #f1f5f9;
+  text-align: center;
+}
+
+.subtitle {
+  margin: 0 0 28px;
+  font-size: 14px;
+  color: #64748b;
+  text-align: center;
+}
+
+/* ── Error banner ────────────────────────────────────────── */
+.errorBanner {
+  background: rgba(248,113,113,0.1);
+  border: 1px solid rgba(248,113,113,0.3);
+  border-radius: 8px;
+  color: #f87171;
+  font-size: 13px;
+  padding: 10px 14px;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+/* ── Form ────────────────────────────────────────────────── */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.field label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.field input {
+  height: 44px;
+  border-radius: 10px;
+  background: #1a2030;
+  border: 1px solid rgba(255,255,255,0.08);
+  color: #e6ebf5;
+  font-size: 15px;
+  padding: 0 14px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.field input:focus {
+  border-color: #3b82f6;
+}
+
+.field input::placeholder {
+  color: #334155;
+}
+
+/* ── Submit button ───────────────────────────────────────── */
+.submitBtn {
+  height: 46px;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #67a0ff 0%, #4a86f7 100%);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  margin-top: 6px;
+  transition: filter 0.15s, opacity 0.15s;
+  box-shadow: 0 8px 24px rgba(74,134,247,0.25);
+}
+
+.submitBtn:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+
+.submitBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

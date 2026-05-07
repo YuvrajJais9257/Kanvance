@@ -1,0 +1,1411 @@
+.page {
+  min-height: 100vh;
+  padding: 0;
+  background: #0b0f16;
+  color: #d6dbe6;
+}
+
+.header {
+  height: 92px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 28px 0 36px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  background: #121621;
+}
+
+.title {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+  color: #f2f4f8;
+}
+
+.subtitle {
+  margin: 4px 0 0;
+  font-size: 16px;
+  color: #7f8ba3;
+}
+
+.headerRight {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.date {
+  font-size: 14px;
+  letter-spacing: 1px;
+  color: #74809a;
+}
+
+.addBtn {
+  border: none;
+  outline: none;
+  background: linear-gradient(180deg, #67a0ff 0%, #4a86f7 100%);
+  color: #fff;
+  padding: 11px 18px;
+  border-radius: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 10px 24px rgba(74, 134, 247, 0.18);
+}
+
+.addBtn:hover {
+  filter: brightness(1.05);
+}
+
+.tabsBar {
+  margin: 36px 0 0 28px;
+  width: fit-content;
+  display: flex;
+  gap: 2px;
+  padding: 6px;
+  border-radius: 18px;
+  background: #141a27;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.tab {
+  border: none;
+  outline: none;
+  background: transparent;
+  color: #7b879c;
+  padding: 10px 18px;
+  border-radius: 12px;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.tabActive {
+  background: #2a3050;
+  color: #f2f5ff;
+  font-weight: 700;
+}
+
+.filterRow {
+  margin: 22px 28px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.filterLeft {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.filterLabel {
+  color: #7d879a;
+  font-size: 16px;
+}
+
+.select {
+  background: #1a2030;
+  color: #aeb7c9;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 10px 16px;
+  min-width: 150px;
+  outline: none;
+}
+
+.count {
+  color: #7f8ba3;
+  font-size: 15px;
+}
+
+.list {
+  padding: 0 28px 32px;
+}
+
+.card {
+  border-radius: 18px;
+  background: #151a24;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  overflow: hidden;
+  margin-bottom: 14px;
+}
+
+.cardTop {
+  display: grid;
+  grid-template-columns: 2.4fr 1fr 1fr 1fr 1fr 0.7fr 26px;
+  align-items: center;
+  gap: 16px;
+  min-height: 92px;
+  padding: 0px 14px;
+  cursor: pointer;
+}
+
+.customerCol {
+  min-width: 0;
+}
+
+.customerName {
+  font-size: 18px;
+  font-weight: 700;
+  color: #eef2f9;
+  margin-bottom: 5px;
+}
+
+.customerSub {
+  font-size: 14px;
+  color: #6f7c93;
+}
+
+.typeCol,
+.ownerCol,
+.progressCol,
+.statusCol,
+.dueCol {
+  display: flex;
+  align-items: center;
+}
+
+.typePill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+  padding: 0 16px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.typeImplementation {
+  background: rgba(74, 134, 247, 0.18);
+  color: #6ea3ff;
+}
+
+.typeManaged {
+  background: rgba(84, 114, 255, 0.16);
+  color: #90a0ff;
+}
+
+.typeRenewal {
+  background: rgba(98, 190, 122, 0.16);
+  color: #7ad28c;
+}
+
+.typeOpportunity {
+  background: rgba(255, 179, 71, 0.16);
+  color: #f0bc6a;
+}
+
+.ownerCol {
+  gap: 10px;
+  color: #c6cfde;
+}
+
+.avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #2c3f72;
+  color: #cfe0ff;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.progressCol {
+  gap: 10px;
+  color: #8a96aa;
+  font-size: 14px;
+}
+
+.progressBar {
+  width: 118px;
+  height: 6px;
+  border-radius: 999px;
+  background: #222838;
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #5e9bff, #89b7ff);
+}
+
+.statusPill {
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.status_OnTrack {
+  background: rgba(52, 168, 83, 0.18);
+  color: #58d47a;
+}
+
+.status_AtRisk {
+  background: rgba(245, 158, 11, 0.18);
+  color: #f5b24d;
+}
+
+.status_Delayed {
+  background: rgba(239, 68, 68, 0.16);
+  color: #ff7f7f;
+}
+
+.dueCol {
+  color: #7f8ba3;
+  font-size: 14px;
+}
+
+.chevron {
+  color: #7f8ba3;
+  text-align: right;
+  font-size: 16px;
+}
+
+.expanded {
+  background: #20263a;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 18px 16px 16px;
+}
+
+.expandedTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #7f8ba3;
+  font-size: 15px;
+  margin-bottom: 12px;
+}
+
+.actionGroup {
+  display: flex;
+  gap: 10px;
+}
+
+.secondaryBtn {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: transparent;
+  color: #dfe5f1;
+  border-radius: 12px;
+  padding: 9px 14px;
+  cursor: pointer;
+}
+
+.secondaryBtn:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.tasksWrap {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.taskCard {
+  border-radius: 14px;
+  background: #171c29;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  /* overflow must NOT be hidden — dropdowns inside subtask rows need to escape */
+  overflow: visible;
+}
+
+.taskHeader {
+  min-height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  cursor: pointer;
+  /* keep rounded corners on the header even without overflow:hidden on parent */
+  border-radius: 14px 14px 0 0;
+}
+
+.taskTitle {
+  font-size: 17px;
+  font-weight: 700;
+  color: #edf1f8;
+}
+
+.taskMeta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #7f8ba3;
+  font-size: 14px;
+}
+
+.smallProgress {
+  width: 66px;
+  height: 5px;
+  border-radius: 999px;
+  background: #242a3b;
+  overflow: hidden;
+}
+
+.smallProgressFill {
+  height: 100%;
+  background: #5d8ef7;
+  border-radius: inherit;
+}
+
+.smallChevron {
+  font-size: 14px;
+}
+
+.subtaskList {
+  padding: 8px 0;
+}
+
+.subtaskRow {
+  display: grid;
+  grid-template-columns: 34px 1fr 160px;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.checkbox {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  border: 1px solid #40485c;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #d9ecff;
+  font-size: 14px;
+  background: #141926;
+}
+
+.checkboxDone {
+  background: #4268d6;
+  border-color: #4268d6;
+}
+
+.subtaskTitle {
+  color: #aeb8cb;
+  font-size: 15px;
+}
+
+.dateInput {
+  width: 160px;
+  height: 34px;
+  padding: 0 12px;
+  border-radius: 8px;
+  background: #1d2332;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #8f9ab0;
+  outline: none;
+}
+
+.emptySubtasks {
+  padding: 14px 16px;
+  color: #7f8ba3;
+  font-size: 14px;
+}
+
+/* Modal */
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(4, 8, 15, 0.72);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+  padding: 20px;
+}
+
+.modal {
+  width: min(720px, 100%);
+  background: #111723;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.45);
+  overflow: hidden;
+}
+
+.modalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.modalHeader h2 {
+  margin: 0;
+  color: #f3f6fb;
+  font-size: 22px;
+}
+
+.closeBtn {
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: #1d2433;
+  color: #d8e1f0;
+  border-radius: 10px;
+  font-size: 22px;
+  cursor: pointer;
+}
+
+.form {
+  padding: 20px;
+}
+
+.formRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.field label {
+  color: #93a0b6;
+  font-size: 14px;
+}
+
+.field input,
+.field select {
+  height: 42px;
+  border-radius: 10px;
+  background: #1a2030;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #e6ebf5;
+  outline: none;
+  padding: 0 14px;
+}
+
+.field input::placeholder {
+  color: #708099;
+}
+
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.cancelBtn,
+.saveBtn {
+  border: none;
+  border-radius: 12px;
+  padding: 11px 16px;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.cancelBtn {
+  background: #1d2433;
+  color: #d8e1f0;
+}
+
+.saveBtn {
+  background: linear-gradient(180deg, #67a0ff 0%, #4a86f7 100%);
+  color: #fff;
+}
+
+@media (max-width: 1200px) {
+  .cardTop {
+    grid-template-columns: 2.2fr 1fr 1fr 1fr 1fr 0.7fr 22px;
+  }
+}
+
+@media (max-width: 980px) {
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    height: auto;
+    padding: 18px 20px;
+  }
+
+  .tabsBar,
+  .filterRow,
+  .list {
+    margin-left: 20px;
+    margin-right: 20px;
+  }
+
+  .cardTop {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .progressBar {
+    width: 100%;
+  }
+
+  .subtaskRow {
+    grid-template-columns: 24px 1fr;
+  }
+
+  .dateInput {
+    grid-column: 2;
+    width: 100%;
+  }
+}
+
+@media (max-width: 700px) {
+  .formRow {
+    grid-template-columns: 1fr;
+  }
+
+  .filterRow {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .filterLeft {
+    flex-wrap: wrap;
+  }
+
+  .tabsBar {
+    width: calc(100% - 40px);
+    overflow-x: auto;
+  }
+}
+
+.collapseBtn {
+  cursor: pointer;
+  font-size: 14px;
+  color: #7f8ba3;
+  transition: 0.2s;
+}
+
+.collapseBtn:hover {
+  color: #cfd8ea;
+}
+
+/* Edit input */
+.editInput {
+  width: 100%;
+  height: 32px;
+  border-radius: 6px;
+  border: 1px solid #5d8ef7;
+  background: #1d2332;
+  color: #fff;
+  padding: 0 10px;
+  outline: none;
+}
+
+.collapseBtn {
+  cursor: pointer;
+  user-select: none;
+}
+
+/* Add these rules to the bottom of your existing Projects.module.css */
+
+/* Wrapper around subtask list + add row so padding is consistent */
+.subtaskBody {
+  padding: 4px 0 8px 0;
+}
+
+/* Inline add-subtask row at the bottom of each task's subtask list */
+.addSubtaskRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px 4px 12px;
+  margin-top: 4px;
+  border-top: 1px dashed #1e2330;
+}
+
+.addSubtaskInput {
+  flex: 1;
+  background: #111318;
+  border: 1px solid #2e3650;
+  border-radius: 6px;
+  color: #e2e8f0;
+  font-size: 13px;
+  padding: 6px 10px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.addSubtaskInput:focus {
+  border-color: #3b82f6;
+}
+
+.addSubtaskInput::placeholder {
+  color: #334155;
+}
+
+.addSubtaskBtn {
+  background: #1e2d45;
+  border: 1px solid #2e4a6e;
+  border-radius: 6px;
+  color: #60a5fa;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 14px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.addSubtaskBtn:hover {
+  background: #1d3a5f;
+  border-color: #3b82f6;
+}
+
+.loading {
+  padding: 60px;
+  text-align: center;
+  color: #475569;
+  font-size: 15px;
+}
+
+.unassigned {
+  color: #475569;
+  font-size: 13px;
+  font-style: italic;
+}
+
+.subtaskDone {
+  text-decoration: line-through;
+  color: #475569;
+}
+
+/* ── Phase 1 — subtask row updated grid ─────────────────────
+   [checkbox 34px | name flex | date 120px | status 110px | flag 30px] */
+.subtaskRow {
+  display: grid;
+  grid-template-columns: 34px 1fr 130px 120px 30px;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-top: 1px solid rgba(255,255,255,0.04);
+}
+
+/* ── Status badge (clickable) ───────────────────────────── */
+.statusBadgeWrap {
+  position: relative;
+  display: inline-flex;
+  isolation: isolate;
+}
+
+.statusBadge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 20px;
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+  letter-spacing: 0.02em;
+  transition: opacity 0.1s;
+}
+
+.statusBadge:hover { opacity: 0.85; }
+
+.statusDropdown {
+  position: absolute;
+  /* open upward to avoid clipping */
+  bottom: calc(100% + 6px);
+  top: auto;
+  left: 0;
+  z-index: 500;
+  background: #1e2535;
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 10px;
+  padding: 6px 0;
+  min-width: 170px;
+  box-shadow: 0 -4px 24px rgba(0,0,0,0.6), 0 8px 32px rgba(0,0,0,0.4);
+}
+
+.statusOption {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.statusOption:hover { background: rgba(255,255,255,0.05); }
+
+.statusDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* ── Flag icon ───────────────────────────────────────────── */
+.flagIcon {
+  font-size: 15px;
+  color: #374151;
+  cursor: pointer;
+  transition: color 0.15s;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.flagIcon:hover { color: #ef4444; }
+
+.flagIconActive {
+  color: #ef4444;
+}
+
+/* ── Group header flag badge ─────────────────────────────── */
+.taskTitleRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.groupFlagBadge {
+  font-size: 11px;
+  font-weight: 700;
+  color: #ef4444;
+  background: rgba(239,68,68,0.12);
+  border: 1px solid rgba(239,68,68,0.3);
+  border-radius: 20px;
+  padding: 2px 8px;
+}
+
+/* ── Flag modal textarea ─────────────────────────────────── */
+.textarea {
+  width: 100%;
+  background: #1a2030;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 8px;
+  color: #e6ebf5;
+  font-size: 14px;
+  padding: 10px 12px;
+  outline: none;
+  resize: vertical;
+  font-family: inherit;
+}
+
+.textarea:focus { border-color: #3b82f6; }
+.textarea::placeholder { color: #334155; }
+
+/* ── Clear flag button ───────────────────────────────────── */
+.clearFlagBtn {
+  border: 1px solid rgba(239,68,68,0.4);
+  border-radius: 10px;
+  padding: 10px 16px;
+  cursor: pointer;
+  font-weight: 600;
+  background: rgba(239,68,68,0.1);
+  color: #f87171;
+  margin-right: auto;
+}
+
+.clearFlagBtn:hover { background: rgba(239,68,68,0.2); }
+
+/* ── Dashboard blocked badge (1C) ────────────────────────── */
+.blockedBadge {
+  display: inline-block;
+  margin-left: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 20px;
+  background: rgba(239,68,68,0.12);
+  color: #f87171;
+  border: 1px solid rgba(239,68,68,0.3);
+}
+
+/* ── Phase 2 — inline edit / delete controls ─────────────── */
+
+/* Inline rename input (group header + subtask name) */
+.inlineEditInput {
+  flex: 1;
+  height: 30px;
+  border-radius: 6px;
+  border: 1px solid #5d8ef7;
+  background: #1d2332;
+  color: #f1f5f9;
+  padding: 0 10px;
+  font-size: 15px;
+  font-weight: 600;
+  outline: none;
+  min-width: 0;
+}
+
+/* Small icon buttons (pencil / delete) on group header */
+.iconBtn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 13px;
+  color: #475569;
+  padding: 2px 5px;
+  border-radius: 4px;
+  line-height: 1;
+  opacity: 0;
+  transition: opacity 0.15s, color 0.15s, background 0.15s;
+  flex-shrink: 0;
+}
+
+.taskTitleRow:hover .iconBtn,
+.taskHeader:hover .iconBtn {
+  opacity: 1;
+}
+
+.iconBtn:hover {
+  color: #94a3b8;
+  background: rgba(255,255,255,0.06);
+}
+
+.iconBtnDanger:hover {
+  color: #f87171 !important;
+  background: rgba(248,113,113,0.1) !important;
+}
+
+/* Subtask-level icon buttons (shown on row hover) */
+.subtaskIconBtn {
+  font-size: 11px;
+  margin-left: 4px;
+  opacity: 0;
+  vertical-align: middle;
+}
+
+.subtaskRowHoverable:hover .subtaskIconBtn {
+  opacity: 1;
+}
+
+/* Inline delete confirm row inside subtask name cell */
+.deleteConfirmRow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.deleteConfirmText {
+  font-size: 13px;
+  color: #f87171;
+  font-weight: 600;
+}
+
+.confirmYesBtn {
+  background: rgba(248,113,113,0.15);
+  border: 1px solid rgba(248,113,113,0.4);
+  border-radius: 6px;
+  color: #f87171;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 3px 10px;
+  cursor: pointer;
+}
+
+.confirmYesBtn:hover { background: rgba(248,113,113,0.25); }
+
+.confirmNoBtn {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 6px;
+  color: #94a3b8;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 3px 10px;
+  cursor: pointer;
+}
+
+.confirmNoBtn:hover { background: rgba(255,255,255,0.08); }
+
+/* + Add phase button at bottom of task list */
+.addPhaseBtn {
+  background: none;
+  border: 1px dashed rgba(255,255,255,0.12);
+  border-radius: 12px;
+  color: #475569;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 10px 18px;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  margin-top: 4px;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.addPhaseBtn:hover {
+  border-color: rgba(90,140,255,0.4);
+  color: #5a8cff;
+}
+
+/* ── Phase 3 — Assignee chip (F3.1–F3.4) ────────────────── */
+
+/* Update subtask row grid to include assignee column:
+   [checkbox 34px | name flex | assignee 36px | date 120px | status 110px | flag 30px | docs 36px] */
+.subtaskRow {
+  grid-template-columns: 34px 1fr 36px 120px 120px 30px 36px;
+}
+
+.assigneeWrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  /* establish stacking context so z-index on dropdown works */
+  isolation: isolate;
+}
+
+.assigneeChip {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #2c3f72;
+  color: #cfe0ff;
+  font-size: 12px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s, box-shadow 0.15s;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.assigneeChip:hover {
+  background: #3b52a0;
+  box-shadow: 0 0 0 2px rgba(90,140,255,0.3);
+}
+
+/* Empty/unassigned state — faint "+" circle */
+.assigneeChipEmpty {
+  background: rgba(255,255,255,0.05);
+  border: 1px dashed rgba(255,255,255,0.15);
+  color: #475569;
+  font-size: 14px;
+}
+
+.assigneeChipEmpty:hover {
+  background: rgba(90,140,255,0.1);
+  border-color: rgba(90,140,255,0.4);
+  color: #5a8cff;
+}
+
+.assigneeDropdown {
+  position: absolute;
+  /* open upward — avoids clipping by the add-step row and next card */
+  bottom: calc(100% + 6px);
+  top: auto;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 500;
+  background: #1e2535;
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 10px;
+  padding: 6px 0;
+  min-width: 170px;
+  box-shadow: 0 -4px 24px rgba(0,0,0,0.6), 0 8px 32px rgba(0,0,0,0.4);
+  /* prevent the dropdown itself from being clipped */
+  overflow: visible;
+}
+
+.assigneeOption {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #cbd5e1;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.assigneeOption:hover { background: rgba(255,255,255,0.05); }
+
+.assigneeOptionActive {
+  color: #5a8cff;
+  font-weight: 700;
+}
+
+.assigneeAvatar {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #2c3f72;
+  color: #cfe0ff;
+  font-size: 11px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.unassignOption {
+  color: #64748b;
+  border-top: 1px solid rgba(255,255,255,0.06);
+  margin-top: 4px;
+  padding-top: 10px;
+  font-style: italic;
+}
+
+
+/* ── Enhancement #6 — Document attachment icon ────────────── */
+.docIcon {
+  font-size: 15px;
+  color: #475569;
+  cursor: pointer;
+  transition: color 0.15s;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.docIcon:hover { color: #60a5fa; }
+
+.docIconActive {
+  color: #60a5fa;
+}
+
+.docRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
+.docRow a {
+  color: #60a5fa;
+  text-decoration: none;
+  flex: 1;
+}
+
+.docRow a:hover { text-decoration: underline; }
+
+.docRow button {
+  background: rgba(239,68,68,0.1);
+  border: 1px solid rgba(239,68,68,0.3);
+  border-radius: 6px;
+  color: #f87171;
+  font-size: 12px;
+  padding: 4px 10px;
+  cursor: pointer;
+}
+
+.docRow button:hover { background: rgba(239,68,68,0.2); }
+
+.docPickerRow {
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.docPickerRow:hover { background: rgba(255,255,255,0.04); }
+
+.docPickerName {
+  font-size: 15px;
+  color: #e2e8f0;
+  margin-bottom: 4px;
+}
+
+.docPickerMeta {
+  font-size: 13px;
+  color: #64748b;
+}
+
+/* ── Enhancement #6 — Attachment system ─────────────────────── */
+
+/* Wrapper that holds the subtask row + optional panel below */
+.subtaskRowWrap {
+  border-top: 1px solid rgba(255,255,255,0.04);
+}
+
+/* Remove the border-top from the inner row since wrapper handles it */
+.subtaskRowWrap .subtaskRow {
+  border-top: none;
+}
+
+/* Attachment toggle icon on the subtask row */
+.attachIcon {
+  font-size: 14px;
+  cursor: pointer;
+  opacity: 0.35;
+  transition: opacity 0.15s;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.attachIcon:hover,
+.attachIconActive {
+  opacity: 1;
+}
+
+/* Update subtask row grid to include the attach icon column */
+.subtaskRow {
+  grid-template-columns: 34px 1fr 36px 120px 120px 30px 22px;
+}
+
+/* ── Attachments panel (expands below the subtask row) ──────── */
+.attachPanel {
+  background: #111520;
+  border-top: 1px solid rgba(255,255,255,0.05);
+  padding: 12px 16px 14px 52px; /* left-indent to align with subtask name */
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.attachLoading {
+  color: #475569;
+  font-size: 13px;
+  padding: 4px 0;
+}
+
+/* Each section (Documents / Infrastructure) */
+.attachSection {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.attachSectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 2px;
+}
+
+.attachSectionTitle {
+  font-size: 12px;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.attachAddBtn {
+  background: rgba(90,140,255,0.1);
+  border: 1px solid rgba(90,140,255,0.25);
+  border-radius: 6px;
+  color: #5a8cff;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 10px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.attachAddBtn:hover {
+  background: rgba(90,140,255,0.2);
+}
+
+.attachEmpty {
+  color: #334155;
+  font-size: 12px;
+  font-style: italic;
+  padding: 2px 0;
+}
+
+/* List of attached items */
+.attachList {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.attachItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 8px;
+  border-radius: 6px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.05);
+}
+
+.attachItemMain {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.attachItemName {
+  font-size: 13px;
+  color: #cbd5e1;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.attachLink {
+  color: #5a8cff;
+  text-decoration: none;
+}
+
+.attachLink:hover {
+  text-decoration: underline;
+}
+
+.attachItemMeta {
+  font-size: 11px;
+  color: #475569;
+}
+
+/* Source label badge */
+.attachSource {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 20px;
+  text-transform: capitalize;
+  flex-shrink: 0;
+}
+
+.attachDirect {
+  background: rgba(90,140,255,0.12);
+  color: #5a8cff;
+  border: 1px solid rgba(90,140,255,0.25);
+}
+
+.attachInherited {
+  background: rgba(100,116,139,0.12);
+  color: #64748b;
+  border: 1px solid rgba(100,116,139,0.2);
+}
+
+/* Unlink button (only on direct attachments) */
+.attachUnlink {
+  background: none;
+  border: none;
+  color: #374151;
+  font-size: 11px;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 4px;
+  flex-shrink: 0;
+  transition: color 0.15s, background 0.15s;
+}
+
+.attachUnlink:hover {
+  color: #f87171;
+  background: rgba(248,113,113,0.1);
+}
+
+/* ── Picker Modal ────────────────────────────────────────────── */
+.pickerList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 340px;
+  overflow-y: auto;
+}
+
+.pickerItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #1a2030;
+  border: 1px solid rgba(255,255,255,0.06);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.pickerItem:hover {
+  background: #1e2840;
+  border-color: rgba(90,140,255,0.3);
+}
+
+.pickerItemIcon {
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.pickerItemText {
+  flex: 1;
+  min-width: 0;
+}
+
+.pickerItemName {
+  font-size: 14px;
+  font-weight: 600;
+  color: #e2e8f0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pickerItemMeta {
+  font-size: 12px;
+  color: #64748b;
+  margin-top: 2px;
+}
+
+.pickerAttachBtn {
+  font-size: 12px;
+  font-weight: 600;
+  color: #5a8cff;
+  flex-shrink: 0;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.pickerItem:hover .pickerAttachBtn {
+  opacity: 1;
+}
+
+/* ── Picker modal — upload new file section ─────────────────── */
+.pickerUploadSection {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(255,255,255,0.06);
+}
+
+.pickerUploadLabel {
+  font-size: 11px;
+  color: #334155;
+  text-align: center;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.pickerFileLabel {
+  display: block;
+  cursor: pointer;
+}
+
+.pickerFileLabelText {
+  display: block;
+  background: rgba(90,140,255,0.06);
+  border: 1px dashed rgba(90,140,255,0.3);
+  border-radius: 8px;
+  color: #5a8cff;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 10px 16px;
+  text-align: center;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.pickerFileLabel:hover .pickerFileLabelText {
+  background: rgba(90,140,255,0.12);
+  border-color: rgba(90,140,255,0.55);
+}

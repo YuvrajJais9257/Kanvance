@@ -1,0 +1,387 @@
+.sidebar {
+  position: fixed;   /* 🔑 makes it stay in place */
+  top: 0;
+  left: 0;
+  width: 260px;
+  height: 100vh;
+
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(180deg, #0e121a 0%, #0b0f16 100%);
+  color: #cbd5e1;
+
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: inset -1px 0 0 rgba(255, 255, 255, 0.02);
+
+  overflow: hidden; /* prevents sidebar itself from scrolling */
+}
+
+.logo {
+  padding: 28px 24px 22px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.logo h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  color: #4f83ff;
+  line-height: 1.1;
+}
+
+.logo span {
+  display: block;
+  margin-top: 6px;
+  font-size: 13px;
+  letter-spacing: 0.6px;
+  color: #6b7280;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+}
+
+.section {
+  padding: 26px 12px 0;
+}
+
+.sectionTitle {
+  margin: 0 0 14px 12px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.8px;
+  color: #667085;
+}
+
+.menuItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 14px;
+  margin-bottom: 8px;
+  border-radius: 12px;
+  cursor: pointer;
+  user-select: none;
+  color: #aab4c5;
+  font-size: 17px;
+  font-weight: 500;
+  transition: all 0.22s ease;
+}
+
+.menuItem:hover {
+  background: rgba(79, 131, 255, 0.08);
+  color: #dce6ff;
+}
+
+.active {
+  background: linear-gradient(90deg, rgba(63, 99, 255, 0.28), rgba(79, 131, 255, 0.18));
+  color: #5a8cff;
+  box-shadow: inset 0 0 0 1px rgba(90, 140, 255, 0.14);
+}
+
+.icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  color: inherit;
+  opacity: 0.95;
+}
+
+.footer {
+  margin-top: auto;
+  padding: 18px 16px 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  color: #8b96a8;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.footer p {
+  margin: 0;
+}
+
+/* Optional: make the sidebar look tighter on smaller screens */
+@media (max-width: 900px) {
+  .sidebar {
+    width: 260px;
+  }
+
+  .menuItem {
+    font-size: 15px;
+  }
+}
+
+/* ── Gear button (F3.13) ─────────────────────────────────── */
+.gearBtn {
+  background: none;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 10px;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 9px 14px;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  transition: all 0.15s;
+  letter-spacing: 0.03em;
+}
+
+.gearBtn:hover {
+  border-color: rgba(90,140,255,0.3);
+  color: #94a3b8;
+  background: rgba(255,255,255,0.03);
+}
+
+/* ── Team modal overlay ──────────────────────────────────── */
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(2px);
+}
+
+.modal {
+  background: #111723;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 16px;
+  width: min(480px, 95vw);
+  box-shadow: 0 24px 64px rgba(0,0,0,0.6);
+  overflow: hidden;
+}
+
+.modalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 20px;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+  font-size: 16px;
+  font-weight: 700;
+  color: #f1f5f9;
+}
+
+.closeBtn {
+  background: none;
+  border: none;
+  color: #64748b;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+}
+
+.closeBtn:hover { color: #e2e8f0; }
+
+/* ── Member list ─────────────────────────────────────────── */
+.memberList {
+  padding: 12px 20px;
+  max-height: 280px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.emptyTeam {
+  color: #475569;
+  font-size: 13px;
+  padding: 12px 0;
+  text-align: center;
+}
+
+.memberRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #1a2030;
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+
+.memberAvatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: #2c3f72;
+  color: #cfe0ff;
+  font-size: 14px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.memberInfo {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.memberName {
+  font-size: 14px;
+  font-weight: 600;
+  color: #e2e8f0;
+}
+
+.memberEmail {
+  font-size: 12px;
+  color: #475569;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.removeBtn {
+  background: none;
+  border: none;
+  color: #475569;
+  cursor: pointer;
+  font-size: 14px;
+  padding: 4px 6px;
+  border-radius: 6px;
+  transition: color 0.15s, background 0.15s;
+  flex-shrink: 0;
+}
+
+.removeBtn:hover {
+  color: #f87171;
+  background: rgba(248,113,113,0.1);
+}
+
+/* ── Error message ───────────────────────────────────────── */
+.teamError {
+  margin: 0 20px;
+  padding: 10px 14px;
+  background: rgba(248,113,113,0.1);
+  border: 1px solid rgba(248,113,113,0.3);
+  border-radius: 8px;
+  color: #f87171;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+/* ── Add member form ─────────────────────────────────────── */
+.addForm {
+  padding: 16px 20px 20px;
+  border-top: 1px solid rgba(255,255,255,0.06);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.addInput {
+  background: #1a2030;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 8px;
+  color: #e6ebf5;
+  font-size: 14px;
+  padding: 9px 12px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.addInput:focus { border-color: #3b82f6; }
+.addInput::placeholder { color: #334155; }
+
+.addBtn {
+  background: linear-gradient(180deg, #67a0ff 0%, #4a86f7 100%);
+  border: none;
+  border-radius: 10px;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  padding: 10px;
+  cursor: pointer;
+  transition: filter 0.15s;
+}
+
+.addBtn:hover { filter: brightness(1.08); }
+.addBtn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* ── User row + logout button ────────────────────────────── */
+.userRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 10px;
+  margin-bottom: 10px;
+}
+
+.userAvatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #2c3f72, #1e2d55);
+  color: #7aa8ff;
+  font-size: 14px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.userInfo {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.userName {
+  font-size: 13px;
+  font-weight: 600;
+  color: #e2e8f0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.userRole {
+  font-size: 11px;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.footerBtns {
+  display: flex;
+  gap: 8px;
+}
+
+.footerBtns .gearBtn {
+  flex: 1;
+}
+
+.logoutBtn {
+  flex: 1;
+  background: none;
+  border: 1px solid rgba(248,113,113,0.25);
+  border-radius: 10px;
+  color: #f87171;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 9px 14px;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.15s;
+  letter-spacing: 0.03em;
+}
+
+.logoutBtn:hover {
+  background: rgba(248,113,113,0.1);
+  border-color: rgba(248,113,113,0.5);
+  color: #fca5a5;
+}

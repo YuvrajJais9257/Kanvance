@@ -29,18 +29,40 @@ if (isProd && !process.env.SESSION_SECRET) {
 /* ── CORS ────────────────────────────────────────────────────── */
 const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
 
-// Support comma-separated list of allowed origins for flexibility
-// e.g. FRONTEND_URL="https://kanvance.vercel.app,https://www.kanvance.vercel.app"
+// Support comma-separated list of allowed origins
 const allowedOrigins = FRONTEND_URL.split(",").map((o) => o.trim());
+
+// Matches any Vercel preview deployment for this project, e.g.:
+// kanvance-7o4nk4qq7-yuvraj-jaiswals-projects.vercel.app
+const VERCEL_PREVIEW_RE = /^https:\/\/kanvance-.*-yuvraj-jaiswals-projects\.vercel\.app$/;
+
+function isOriginAllowed(origin) {
+  if (!origin) return true; // curl, Postman, server-to-server
+  if (allowedOrigins.includes(origin)) return true;
+  if (VERCEL_PREVIEW_RE.test(origin)) return true;
+  return false;
+}
 
 app.use(cors({
   origin: (origin, callback) => {
     // Allow requests with no origin (curl, Postman, server-to-server)
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.includes(origin)) return callback(null, true);
-    callback(new Error(`CORS: origin ${origin} not allowed`));
+    if (isOriginAllowed(origin)) return callback(null, true);
+    // Return false (not an Error) — Express will send 403, not 500
+    return callback(null, false);
   },
-  credentials: true,   // required for cross-origin cookies
+  credentials: true,
+}));
+
+// Respond to ALL OPTIONS preflight requests immediately with 204.
+// Must come AFTER cors() so the CORS headers are already set,
+// and BEFORE requireAuth so preflight is never blocked by auth.
+// Express 5 requires "/{*path}" instead of "*" for catch-all routes.
+app.options("/{*path}", cors({
+  origin: (origin, callback) => {
+    if (isOriginAllowed(origin)) return callback(null, true);
+    return callback(null, false);
+  },
+  credentials: true,
 }));
 
 app.use(express.json());

@@ -11,6 +11,9 @@
  */
 module.exports = function requireRole(...roles) {
   return (req, res, next) => {
+    // Always pass OPTIONS preflight through
+    if (req.method === "OPTIONS") return next();
+
     if (!req.session || !req.session.userId) {
       return res.status(401).json({ error: "Authentication required" });
     }

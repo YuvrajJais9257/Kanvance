@@ -68,7 +68,9 @@ const Sidebar = () => {
     { label: "Dashboard", path: "/dashboard" },
     { label: "Projects",  path: "/" },
     { label: "Customers", path: "/customers" },
-    { label: "My Tasks",  path: "/my-tasks" },   // F3.5
+    { label: "My Tasks",  path: "/my-tasks" },
+    // Users page — visible to ADMIN and MANAGER only
+    ...( ["ADMIN","MANAGER"].includes(user?.role) ? [{ label: "Users", path: "/users" }] : [] ),
   ];
 
   return (

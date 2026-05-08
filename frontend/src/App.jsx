@@ -3,6 +3,7 @@ import Projects       from './components/Projects/Projects';
 import Dashboard      from './components/Dashboard/Dashboard';
 import Customers      from './components/Customers/Customers';
 import MyTasks        from './components/MyTasks/MyTasks';
+import Users          from './components/Users/Users';
 import Login          from './components/Login/Login';
 import ProtectedRoute from './components/ProtectedRoute';
 import { ErrorProvider } from './context/ErrorContext';
@@ -29,6 +30,9 @@ function App() {
             } />
             <Route path="/my-tasks" element={
               <ProtectedRoute><MyTasks /></ProtectedRoute>
+            } />
+            <Route path="/users" element={
+              <ProtectedRoute><Users /></ProtectedRoute>
             } />
 
             {/* Fallback */}

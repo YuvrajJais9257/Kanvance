@@ -1,5 +1,6 @@
 const bcrypt             = require("bcrypt");
 const AuthModel          = require("../models/auth.model");
+const UserModel          = require("../models/user.model");
 const AvailabilityModel  = require("../models/availability.model");
 
 const SALT_ROUNDS = 12;
@@ -29,22 +30,40 @@ exports.register = async (req, res, next) => {
 };
 
 // ── POST /api/auth/login ─────────────────────────────────────
+// Accepts: { email, password }  OR  { username, password }
 exports.login = async (req, res, next) => {
   try {
-    const { email, password } = req.body;
+    const { email, username, password } = req.body;
+    const identifier = email || username;
 
-    if (!email || !password) {
-      return res.status(400).json({ error: "email and password are required" });
+    if (!identifier || !password) {
+      return res.status(400).json({ error: "email (or username) and password are required" });
     }
 
-    const user = await AuthModel.findByEmail(email);
+    // Look up by email first, then by username
+    let user = null;
+    if (email) {
+      user = await UserModel.findByEmail(email.trim().toLowerCase());
+    } else {
+      user = await UserModel.findByUsername(username.trim().toLowerCase());
+    }
+
     if (!user || !user.password_hash) {
-      return res.status(401).json({ error: "Invalid email or password" });
+      return res.status(401).json({ error: "Invalid credentials" });
     }
 
+    // Verify password
     const match = await bcrypt.compare(password, user.password_hash);
     if (!match) {
-      return res.status(401).json({ error: "Invalid email or password" });
+      return res.status(401).json({ error: "Invalid credentials" });
+    }
+
+    // Enforce account status — inactive/disabled users cannot log in
+    if (user.status === "inactive") {
+      return res.status(403).json({ error: "Account is inactive. Contact an administrator." });
+    }
+    if (user.status === "disabled") {
+      return res.status(403).json({ error: "Account has been disabled. Contact an administrator." });
     }
 
     // Store minimal user info in session
@@ -52,14 +71,16 @@ exports.login = async (req, res, next) => {
     req.session.userName = user.name;
     req.session.userRole = user.role;
 
-    // Set status to Active on login (fire-and-forget; never block the login response)
+    // Fire-and-forget side effects — never block the login response
+    UserModel.touchLastLogin(user.id).catch(console.error);
     AvailabilityModel.setStatus(user.id, "Active").catch(console.error);
 
     res.json({
-      id:    user.id,
-      name:  user.name,
-      email: user.email,
-      role:  user.role,
+      id:       user.id,
+      name:     user.name,
+      username: user.username ?? null,
+      email:    user.email,
+      role:     user.role,
     });
   } catch (err) {
     next(err);
@@ -68,7 +89,6 @@ exports.login = async (req, res, next) => {
 
 // ── POST /api/auth/logout ────────────────────────────────────
 exports.logout = (req, res) => {
-  // Set status to Offline before destroying the session (fire-and-forget)
   if (req.session && req.session.userId) {
     AvailabilityModel.setStatus(req.session.userId, "Offline").catch(console.error);
   }
@@ -82,7 +102,7 @@ exports.logout = (req, res) => {
 // ── GET /api/auth/me ─────────────────────────────────────────
 exports.me = async (req, res, next) => {
   try {
-    const user = await AuthModel.findById(req.session.userId);
+    const user = await UserModel.getById(req.session.userId);
     if (!user) return res.status(401).json({ error: "Not authenticated" });
     res.json(user);
   } catch (err) {

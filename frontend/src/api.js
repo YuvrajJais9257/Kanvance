@@ -118,3 +118,16 @@ export const register = (data) => post("/api/auth/register", data);
 // ── Availability ─────────────────────────────────────────────
 export const getAvailability  = ()       => USE_API ? get("/api/availability")              : Promise.resolve([]);
 export const updateMyStatus   = (status) => USE_API ? put("/api/availability", { status })  : Promise.resolve();
+
+// ── User Management (admin) ───────────────────────────────────
+export const getUsers      = (params = {}) => {
+  const qs = new URLSearchParams(
+    Object.fromEntries(Object.entries(params).filter(([, v]) => v !== "" && v != null))
+  ).toString();
+  return USE_API ? get(`/api/users${qs ? "?" + qs : ""}`) : Promise.resolve({ data: [], total: 0, page: 1, limit: 50 });
+};
+export const getUserById   = (id)     => USE_API ? get(`/api/users/${id}`)          : Promise.resolve(null);
+export const createUser    = (data)   => USE_API ? post("/api/users", data)          : Promise.resolve({ id: Date.now() });
+export const updateUser    = (id, d)  => USE_API ? request("PATCH", `/api/users/${id}`, d) : Promise.resolve();
+export const deactivateUser = (id)   => USE_API ? request("PATCH", `/api/users/${id}/deactivate`) : Promise.resolve();
+export const deleteUser    = (id)     => USE_API ? del(`/api/users/${id}`)           : Promise.resolve();

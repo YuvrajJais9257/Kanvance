@@ -1,8 +1,17 @@
+/**
+ * auth.model.js
+ *
+ * Thin auth-specific queries kept for backward compatibility with
+ * the register endpoint. Login now goes through user.model.js directly.
+ * All queries exclude soft-deleted rows (deleted_at IS NULL).
+ */
 const pool = require("../config/db");
 
 exports.findByEmail = async (email) => {
   const [[row]] = await pool.execute(
-    "SELECT id, name, email, password_hash, role FROM users WHERE email = ?",
+    `SELECT id, name, email, password_hash, role, status
+     FROM users
+     WHERE email = ? AND deleted_at IS NULL`,
     [email]
   );
   return row ?? null;
@@ -10,7 +19,9 @@ exports.findByEmail = async (email) => {
 
 exports.findById = async (id) => {
   const [[row]] = await pool.execute(
-    "SELECT id, name, email, role FROM users WHERE id = ?",
+    `SELECT id, name, username, email, role, status
+     FROM users
+     WHERE id = ? AND deleted_at IS NULL`,
     [id]
   );
   return row ?? null;

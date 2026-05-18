@@ -1,8 +1,0 @@
-{
-  "rewrites": [
-    {
-      "source": "/api/:path*",
-      "destination": "https://kanvance.onrender.com/api/:path*"
-    }
-  ]
-}

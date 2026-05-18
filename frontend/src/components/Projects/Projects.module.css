@@ -135,6 +135,7 @@
   overflow: hidden;
   margin-bottom: 14px;
   box-shadow: 0 14px 34px rgba(0,0,0,0.22);
+  /* Dropdowns inside use position:fixed or high z-index to escape */
 }
 
 .card:hover {
@@ -374,26 +375,21 @@
   padding: 8px 0;
 }
 
-.subtaskRow {
-  display: grid;
-  grid-template-columns: 34px 1fr 160px;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 16px;
-  border-top: 1px solid rgba(255, 255, 255, 0.04);
-}
+/* subtaskRow grid is defined further below with the full column set */
 
 .checkbox {
-  width: 22px;
-  height: 22px;
-  border-radius: 6px;
+  width: 20px;
+  height: 20px;
+  border-radius: 5px;
   border: 1px solid #40485c;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   color: #d9ecff;
-  font-size: 14px;
+  font-size: 12px;
   background: #141926;
+  flex-shrink: 0;
+  cursor: pointer;
 }
 
 .checkboxDone {
@@ -403,18 +399,49 @@
 
 .subtaskTitle {
   color: #aeb8cb;
-  font-size: 15px;
+  font-size: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 2px;
 }
 
 .dateInput {
-  width: 160px;
-  height: 34px;
-  padding: 0 12px;
-  border-radius: 8px;
+  width: 100%;
+  height: 30px;
+  padding: 0 4px 0 6px;
+  border-radius: 7px;
   background: #1d2332;
   border: 1px solid rgba(255, 255, 255, 0.08);
   color: #8f9ab0;
   outline: none;
+  font-size: 11px;
+  min-width: 0;
+  cursor: pointer;
+  /* Keep native date picker functional — just style the icon */
+  color-scheme: dark;
+}
+
+.dateInput:focus {
+  border-color: rgba(90, 140, 255, 0.4);
+}
+
+/* Style the calendar icon to match the dark theme */
+.dateInput::-webkit-calendar-picker-indicator {
+  filter: invert(0.5);
+  cursor: pointer;
+  padding: 0;
+  margin: 0;
+  width: 14px;
+  height: 14px;
+  opacity: 0.6;
+}
+
+.dateInput::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
 }
 
 .emptySubtasks {
@@ -564,12 +591,18 @@
   }
 
   .subtaskRow {
-    grid-template-columns: 24px 1fr;
+    grid-template-columns: 24px 1fr 26px 100px;
   }
 
   .dateInput {
-    grid-column: 2;
     width: 100%;
+    max-width: none;
+  }
+
+  /* Hide flag and attach icons on small screens to save space */
+  .flagIcon,
+  .attachIcon {
+    display: none;
   }
 }
 
@@ -695,51 +728,42 @@
   color: #475569;
 }
 
-/* ── Phase 1 — subtask row updated grid ─────────────────────
-   [checkbox 34px | name flex | date 120px | status 110px | flag 30px] */
-.subtaskRow {
-  display: grid;
-  grid-template-columns: 34px 1fr 130px 120px 30px;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 16px;
-  border-top: 1px solid rgba(255,255,255,0.04);
-}
-
-/* ── Status badge (clickable) ───────────────────────────── */
+/* ── Phase 1 — subtask row updated grid (superseded by Phase 3 definition below) ── */
 .statusBadgeWrap {
   position: relative;
   display: inline-flex;
   isolation: isolate;
+  min-width: 0;
+  width: 100%;
 }
 
 .statusBadge {
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 600;
-  padding: 4px 10px;
+  padding: 3px 7px;
   border-radius: 20px;
   white-space: nowrap;
   cursor: pointer;
   user-select: none;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.01em;
   transition: opacity 0.1s;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  display: block;
 }
 
 .statusBadge:hover { opacity: 0.85; }
 
 .statusDropdown {
-  position: absolute;
-  /* open upward to avoid clipping */
-  bottom: calc(100% + 6px);
-  top: auto;
-  left: 0;
-  z-index: 500;
+  position: fixed;
+  z-index: 9999;
   background: #1e2535;
   border: 1px solid rgba(255,255,255,0.12);
   border-radius: 10px;
   padding: 6px 0;
   min-width: 170px;
-  box-shadow: 0 -4px 24px rgba(0,0,0,0.6), 0 8px 32px rgba(0,0,0,0.4);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.6);
 }
 
 .statusOption {
@@ -764,7 +788,7 @@
 
 /* ── Flag icon ───────────────────────────────────────────── */
 .flagIcon {
-  font-size: 15px;
+  font-size: 13px;
   color: #374151;
   cursor: pointer;
   transition: color 0.15s;
@@ -772,6 +796,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 }
 
 .flagIcon:hover { color: #ef4444; }
@@ -962,10 +987,18 @@
 
 /* ── Phase 3 — Assignee chip (F3.1–F3.4) ────────────────── */
 
-/* Update subtask row grid to include assignee column:
-   [checkbox 34px | name flex | assignee 36px | date 120px | status 110px | flag 30px | docs 36px] */
+/* Subtask row — single line layout:
+   checkbox | name (flex) | assignee | date | status | flag | attach
+   Columns sized to fit within the card (~700px) without wrapping.        */
 .subtaskRow {
-  grid-template-columns: 34px 1fr 36px 120px 120px 30px 36px;
+  display: grid;
+  grid-template-columns: 28px 1fr 32px 110px minmax(100px, 120px) 24px 22px;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-top: none; /* handled by .subtaskRowWrap */
+  min-width: 0;
+  overflow: visible;
 }
 
 .assigneeWrap {
@@ -978,12 +1011,12 @@
 }
 
 .assigneeChip {
-  width: 28px;
-  height: 28px;
+  width: 26px;
+  height: 26px;
   border-radius: 50%;
   background: #2c3f72;
   color: #cfe0ff;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
   display: inline-flex;
   align-items: center;
@@ -1014,21 +1047,14 @@
 }
 
 .assigneeDropdown {
-  position: absolute;
-  /* open upward — avoids clipping by the add-step row and next card */
-  bottom: calc(100% + 6px);
-  top: auto;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 500;
+  position: fixed;
+  z-index: 9999;
   background: #1e2535;
   border: 1px solid rgba(255,255,255,0.12);
   border-radius: 10px;
   padding: 6px 0;
   min-width: 170px;
-  box-shadow: 0 -4px 24px rgba(0,0,0,0.6), 0 8px 32px rgba(0,0,0,0.4);
-  /* prevent the dropdown itself from being clipped */
-  overflow: visible;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.6);
 }
 
 .assigneeOption {
@@ -1153,22 +1179,20 @@
 
 /* Attachment toggle icon on the subtask row */
 .attachIcon {
-  font-size: 14px;
+  font-size: 13px;
   cursor: pointer;
   opacity: 0.35;
   transition: opacity 0.15s;
   user-select: none;
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .attachIcon:hover,
 .attachIconActive {
   opacity: 1;
-}
-
-/* Update subtask row grid to include the attach icon column */
-.subtaskRow {
-  grid-template-columns: 34px 1fr 36px 120px 120px 30px 22px;
 }
 
 /* ── Attachments panel (expands below the subtask row) ──────── */

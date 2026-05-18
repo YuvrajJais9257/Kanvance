@@ -1,8 +1,9 @@
 const pool = require("../config/db");
 
 exports.getAll = async () => {
+  // Only return active (non-deleted) users for the team list
   const [rows] = await pool.execute(
-    "SELECT id, name, email, created_at FROM users ORDER BY name"
+    "SELECT id, name, email, created_at FROM users WHERE deleted_at IS NULL AND status != 'disabled' ORDER BY name"
   );
   return rows;
 };

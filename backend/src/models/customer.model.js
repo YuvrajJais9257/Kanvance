@@ -5,11 +5,17 @@ exports.getAll = async ({ page, limit } = {}) => {
   const limitNum = Math.min(500, Math.max(1, parseInt(limit, 10) || 500));
   const offset   = (pageNum - 1) * limitNum;
 
-  // Use pool.query (not execute) for LIMIT/OFFSET — mysql2 prepared statements
-  // require integer binding which can be finicky; query() interpolates safely.
+  // Use MIN() aggregates on all non-grouped columns so the query is
+  // compatible with ONLY_FULL_GROUP_BY. This also deduplicates customers
+  // that share the same name, picking the earliest row for each.
   const [rows] = await pool.query(
-    `SELECT id, name, industry, license_type, license_count, license_expiry
+    `SELECT MIN(id) AS id, name,
+            MIN(industry)      AS industry,
+            MIN(license_type)  AS license_type,
+            MIN(license_count) AS license_count,
+            MIN(license_expiry) AS license_expiry
      FROM customers
+     GROUP BY name
      ORDER BY name
      LIMIT ${limitNum} OFFSET ${offset}`
   );

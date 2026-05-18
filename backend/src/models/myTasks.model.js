@@ -1,6 +1,44 @@
 const pool = require("../config/db");
 
-exports.getByMember = async (memberId) => {
+/**
+ * getByMember(memberId, requestingUserId, requestingRole)
+ *
+ * Returns subtasks assigned to `memberId`, ordered by urgency.
+ *
+ * Visibility rules:
+ *  - ADMIN / MANAGER: can see tasks for any member
+ *  - MEMBER: can only see tasks for members who share at least one project
+ *    with them (project-based visibility), or their own tasks
+ */
+exports.getByMember = async (memberId, requestingUserId, requestingRole) => {
+  const isPrivileged = ["ADMIN", "LEAD", "MANAGER"].includes(requestingRole);
+  const isSelf = String(memberId) === String(requestingUserId);
+
+  // Non-privileged users can only view tasks for themselves or members
+  // who share a project with them.
+  if (!isPrivileged && !isSelf) {
+    // Check if requestingUser and memberId share at least one project
+    const [shared] = await pool.execute(
+      `SELECT COUNT(*) AS cnt
+       FROM projects p1
+       JOIN projects p2 ON p2.customer_id = p1.customer_id
+       WHERE (p1.owner_id = ? OR EXISTS (
+         SELECT 1 FROM subtasks s1
+         JOIN activity_groups ag1 ON ag1.id = s1.group_id
+         WHERE ag1.project_id = p1.id AND s1.assignee_id = ?
+       ))
+       AND (p2.owner_id = ? OR EXISTS (
+         SELECT 1 FROM subtasks s2
+         JOIN activity_groups ag2 ON ag2.id = s2.group_id
+         WHERE ag2.project_id = p2.id AND s2.assignee_id = ?
+       ))`,
+      [requestingUserId, requestingUserId, memberId, memberId]
+    );
+    if (shared[0].cnt === 0) {
+      return []; // no shared project — return empty
+    }
+  }
+
   const [rows] = await pool.execute(
     `SELECT
        s.id          AS subtask_id,

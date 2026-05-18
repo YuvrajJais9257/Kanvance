@@ -5,7 +5,7 @@ import { getUsers, createUser, updateUser, deactivateUser, deleteUser } from "..
 import { useError } from "../../context/ErrorContext";
 import { useAuth } from "../../context/AuthContext";
 
-const ROLES    = ["ADMIN", "MANAGER", "MEMBER"];
+const ROLES    = ["ADMIN", "LEAD", "MANAGER", "MEMBER"];
 const STATUSES = ["active", "inactive", "disabled"];
 
 const STATUS_COLORS = {
@@ -16,6 +16,7 @@ const STATUS_COLORS = {
 
 const ROLE_COLORS = {
   ADMIN:   { bg: "rgba(167,139,250,0.12)", color: "#a78bfa" },
+  LEAD:    { bg: "rgba(236,72,153,0.12)",  color: "#ec4899" },
   MANAGER: { bg: "rgba(59,130,246,0.12)",  color: "#3b82f6" },
   MEMBER:  { bg: "rgba(100,116,139,0.12)", color: "#64748b" },
 };

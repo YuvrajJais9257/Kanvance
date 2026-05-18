@@ -9,7 +9,7 @@ const bcrypt    = require("bcrypt");
 const UserModel = require("../models/user.model");
 
 const SALT_ROUNDS   = 12;
-const VALID_ROLES   = ["ADMIN", "MANAGER", "MEMBER"];
+const VALID_ROLES   = ["ADMIN", "LEAD", "MANAGER", "MEMBER"];
 const VALID_STATUSES = ["active", "inactive", "disabled"];
 
 // ── Helpers ───────────────────────────────────────────────────

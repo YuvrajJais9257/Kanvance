@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
 import styles from "./Sidebar.module.css";
 import { useNavigate, useLocation } from "react-router-dom";
-import { getTeam, createTeamMember, deleteTeamMember } from "../../api";
+import { getTeam, deleteTeamMember } from "../../api";
 import { useAuth } from "../../context/AuthContext";
 import { useAvailability } from "../../hooks/useAvailability";
 import StatusDot from "../StatusDot/StatusDot";
 import StatusPicker from "../StatusDot/StatusPicker";
+// Note: user creation is handled exclusively in User Management (/users)
 
 const Sidebar = () => {
   const navigate  = useNavigate();
@@ -20,13 +21,10 @@ const Sidebar = () => {
     navigate("/login", { replace: true });
   };
 
-  // ── Team management modal (F3.13–F3.17) ─────────────────
+  // ── Team management modal ─────────────────────────────────
   const [showTeam, setShowTeam]   = useState(false);
   const [team, setTeam]           = useState([]);
-  const [newName, setNewName]     = useState("");
-  const [newEmail, setNewEmail]   = useState("");
   const [teamError, setTeamError] = useState("");
-  const [adding, setAdding]       = useState(false);
 
   const loadTeam = () =>
     getTeam().then(setTeam).catch(() => {});
@@ -35,25 +33,7 @@ const Sidebar = () => {
     if (showTeam) loadTeam();
   }, [showTeam]);
 
-  // F3.15 — add member
-  const handleAddMember = async (e) => {
-    e.preventDefault();
-    if (!newName.trim()) return;
-    setAdding(true);
-    setTeamError("");
-    try {
-      await createTeamMember({ name: newName.trim(), email: newEmail.trim() || null });
-      setNewName("");
-      setNewEmail("");
-      await loadTeam();
-    } catch (err) {
-      setTeamError(err.message);
-    } finally {
-      setAdding(false);
-    }
-  };
-
-  // F3.16 — remove member (show API error if 409)
+  // Remove member (show API error if 409 — open tasks)
   const handleRemoveMember = async (id) => {
     setTeamError("");
     try {
@@ -69,8 +49,8 @@ const Sidebar = () => {
     { label: "Projects",  path: "/" },
     { label: "Customers", path: "/customers" },
     { label: "My Tasks",  path: "/my-tasks" },
-    // Users page — visible to ADMIN and MANAGER only
-    ...( ["ADMIN","MANAGER"].includes(user?.role) ? [{ label: "Users", path: "/users" }] : [] ),
+    // Users page — visible to ADMIN, LEAD, and MANAGER
+    ...( ["ADMIN","LEAD","MANAGER"].includes(user?.role) ? [{ label: "Users", path: "/users" }] : [] ),
   ];
 
   return (
@@ -156,7 +136,7 @@ const Sidebar = () => {
         </div>
       </div>
 
-      {/* F3.14 — Team management modal */}
+      {/* Team management modal */}
       {showTeam && (
         <div className={styles.modalOverlay} onClick={() => setShowTeam(false)}>
           <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
@@ -178,7 +158,7 @@ const Sidebar = () => {
                     {m.email && <span className={styles.memberEmail}>{m.email}</span>}
                   </div>
                   <StatusDot status={statuses.get(m.id) ?? "Offline"} size="sm" />
-                  {/* F3.16 — remove button */}
+                  {/* Remove button — blocked if member has open tasks */}
                   <button
                     className={styles.removeBtn}
                     onClick={() => handleRemoveMember(m.id)}
@@ -193,25 +173,21 @@ const Sidebar = () => {
               <div className={styles.teamError}>{teamError}</div>
             )}
 
-            {/* F3.15 — add member form */}
-            <form className={styles.addForm} onSubmit={handleAddMember}>
-              <input
-                className={styles.addInput}
-                placeholder="Name *"
-                value={newName}
-                onChange={(e) => setNewName(e.target.value)}
-                required
-              />
-              <input
-                className={styles.addInput}
-                placeholder="Email (optional)"
-                value={newEmail}
-                onChange={(e) => setNewEmail(e.target.value)}
-              />
-              <button type="submit" className={styles.addBtn} disabled={adding}>
-                {adding ? "Adding…" : "+ Add Member"}
-              </button>
-            </form>
+            {/* Redirect to User Management for adding new users */}
+            {["ADMIN", "LEAD", "MANAGER"].includes(user?.role) && (
+              <div className={styles.addMemberHint}>
+                <p className={styles.addMemberHintText}>
+                  To add a new team member, use the{" "}
+                  <button
+                    className={styles.addMemberLink}
+                    onClick={() => { setShowTeam(false); navigate("/users"); }}
+                  >
+                    User Management
+                  </button>{" "}
+                  page where you can set up credentials and roles properly.
+                </p>
+              </div>
+            )}
           </div>
         </div>
       )}

@@ -6,6 +6,7 @@ import { useError } from "../../context/ErrorContext";
 import { useNavigate } from "react-router-dom";
 import { useAvailability } from "../../hooks/useAvailability";
 import StatusDot from "../StatusDot/StatusDot";
+import { useAuth } from "../../context/AuthContext";
 
 const STATUS_COLOR = {
   "Not Started":       "#6b7280",
@@ -54,21 +55,30 @@ export default function MyTasks() {
   const { showError } = useError();
   const navigate = useNavigate();
   const { statuses } = useAvailability();
+  const { user } = useAuth();
+
+  // ADMIN, LEAD, and MANAGER can browse other members' tasks
+  const canViewAll = ["ADMIN", "LEAD", "MANAGER"].includes(user?.role);
 
   const [team, setTeam]                   = useState([]);
   const [selectedMember, setSelectedMember] = useState(null);
   const [tasks, setTasks]                 = useState([]);
   const [loading, setLoading]             = useState(false);
 
-  // Load team on mount
+  // Load team on mount — only needed for admin/manager member picker
   useEffect(() => {
-    getTeam()
-      .then((t) => {
-        setTeam(t);
-        if (t.length > 0) setSelectedMember(t[0]);
-      })
-      .catch((err) => showError(err.message));
-  }, []);
+    if (canViewAll) {
+      getTeam()
+        .then((t) => {
+          setTeam(t);
+          if (t.length > 0) setSelectedMember(t[0]);
+        })
+        .catch((err) => showError(err.message));
+    } else {
+      // Non-admin: always load their own tasks; no member picker needed
+      if (user) setSelectedMember({ id: user.id, name: user.name });
+    }
+  }, [canViewAll, user]);
 
   // Load tasks when member changes
   useEffect(() => {
@@ -97,39 +107,41 @@ export default function MyTasks() {
           <span className={styles.dateStr}>{todayLabel}</span>
         </div>
 
-        {/* F3.8 — Member picker: tab strip ≤6, dropdown if more */}
-        <div className={styles.pickerRow}>
-          {useTabStrip ? (
-            <div className={styles.tabStrip}>
-              {team.map((m) => (
-                <button
-                  key={m.id}
-                  className={`${styles.memberTab} ${selectedMember?.id === m.id ? styles.memberTabActive : ""}`}
-                  onClick={() => setSelectedMember(m)}
-                >
-                  <StatusDot status={statuses.get(m.id) ?? "Offline"} size="sm" />
-                  <span className={styles.memberAvatar}>{m.name[0]}</span>
-                  {m.name}
-                </button>
-              ))}
-            </div>
-          ) : (
-            <select
-              className={styles.memberSelect}
-              value={selectedMember?.id ?? ""}
-              onChange={(e) => {
-                const m = team.find((t) => t.id === Number(e.target.value));
-                if (m) setSelectedMember(m);
-              }}
-            >
-              {team.map((m) => (
-                <option key={m.id} value={m.id}>
-                  [{statuses.get(m.id) ?? "Offline"}] {m.name}
-                </option>
-              ))}
-            </select>
-          )}
-        </div>
+        {/* Member picker: only visible to ADMIN and MANAGER */}
+        {canViewAll && (
+          <div className={styles.pickerRow}>
+            {useTabStrip ? (
+              <div className={styles.tabStrip}>
+                {team.map((m) => (
+                  <button
+                    key={m.id}
+                    className={`${styles.memberTab} ${selectedMember?.id === m.id ? styles.memberTabActive : ""}`}
+                    onClick={() => setSelectedMember(m)}
+                  >
+                    <StatusDot status={statuses.get(m.id) ?? "Offline"} size="sm" />
+                    <span className={styles.memberAvatar}>{m.name[0]}</span>
+                    {m.name}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <select
+                className={styles.memberSelect}
+                value={selectedMember?.id ?? ""}
+                onChange={(e) => {
+                  const m = team.find((t) => t.id === Number(e.target.value));
+                  if (m) setSelectedMember(m);
+                }}
+              >
+                {team.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    [{statuses.get(m.id) ?? "Offline"}] {m.name}
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
+        )}
 
         {/* Task list */}
         <div className={styles.content}>

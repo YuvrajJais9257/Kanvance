@@ -19,7 +19,7 @@ exports.getAll = async (req, res, next) => {
 // GET /api/users/:id
 exports.getById = async (req, res, next) => {
   try {
-    // MEMBER can only view their own profile
+    // MEMBER can only view their own profile; ADMIN/LEAD/MANAGER can view any
     const role = req.session.userRole ?? "MEMBER";
     if (role === "MEMBER" && Number(req.params.id) !== Number(req.session.userId)) {
       return res.status(403).json({ error: "Forbidden — you can only view your own profile" });

@@ -415,3 +415,33 @@
   border-color: rgba(248,113,113,0.5);
   color: #fca5a5;
 }
+
+/* ── Add member hint (replaces the old add-member form) ─────── */
+.addMemberHint {
+  padding: 14px 20px 18px;
+  border-top: 1px solid rgba(255,255,255,0.06);
+}
+
+.addMemberHintText {
+  margin: 0;
+  font-size: 13px;
+  color: #64748b;
+  line-height: 1.6;
+}
+
+.addMemberLink {
+  background: none;
+  border: none;
+  padding: 0;
+  color: #5a8cff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  transition: color 0.15s;
+}
+
+.addMemberLink:hover {
+  color: #7ab0ff;
+}

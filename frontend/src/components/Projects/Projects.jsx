@@ -11,6 +11,7 @@ import {
   getEntityInfra, getPickerInfra, linkInfra, unlinkInfra,
 } from "../../api";
 import { useError } from "../../context/ErrorContext";
+import { useAuth } from "../../context/AuthContext";
 
 // ── Constants ────────────────────────────────────────────────
 const typeTabs = ["All", "Implementation", "Managed Service", "License Renewal", "New Opportunity"];
@@ -18,6 +19,21 @@ const typeTabs = ["All", "Implementation", "Managed Service", "License Renewal",
 const todayLabel = new Intl.DateTimeFormat("en-US", {
   weekday: "short", day: "2-digit", month: "short", year: "numeric",
 }).format(new Date());
+
+// Roles that can assign subtasks to other users
+const ASSIGNER_ROLES = ["ADMIN", "LEAD", "MANAGER"];
+
+// Format a raw date string (ISO or YYYY-MM-DD) to "30 May 2026"
+function formatDate(raw) {
+  if (!raw) return "—";
+  try {
+    // Parse as local date to avoid timezone shifts
+    const d = new Date(raw.includes("T") ? raw : raw + "T00:00:00");
+    return d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+  } catch {
+    return raw;
+  }
+}
 
 // Phase 1 — 6 statuses with colours
 const STATUSES = [
@@ -52,45 +68,60 @@ const getTypeClass = (type) => {
   return styles.typeOpportunity;
 };
 
-// ── Status Badge (clickable dropdown) ───────────────────────
+// ── Status Badge (clickable dropdown — position:fixed to escape overflow:hidden) ──
 function StatusBadge({ status, onSelect }) {
   const [open, setOpen] = useState(false);
-  const ref = useRef(null);
+  const [dropPos, setDropPos] = useState({ top: 0, left: 0 });
+  const badgeRef = useRef(null);
   const color = STATUS_COLOR[status] ?? "#6b7280";
+
+  const openDropdown = () => {
+    if (badgeRef.current) {
+      const r = badgeRef.current.getBoundingClientRect();
+      // Open below the badge; if too close to bottom, open above
+      const spaceBelow = window.innerHeight - r.bottom;
+      const dropHeight = 240; // approx height of dropdown
+      const top = spaceBelow > dropHeight ? r.bottom + 4 : r.top - dropHeight - 4;
+      setDropPos({ top, left: r.left });
+    }
+    setOpen((o) => !o);
+  };
 
   useEffect(() => {
     if (!open) return;
-    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    const handler = (e) => {
+      if (badgeRef.current && !badgeRef.current.contains(e.target)) setOpen(false);
+    };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, [open]);
 
   return (
     <div
-      ref={ref}
       className={styles.statusBadgeWrap}
       onClick={(e) => e.stopPropagation()}
-      role="button"
-      tabIndex={0}
-      aria-haspopup="listbox"
-      aria-expanded={open}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          e.stopPropagation();
-          setOpen((o) => !o);
-        }
-      }}
     >
       <span
+        ref={badgeRef}
         className={styles.statusBadge}
         style={{ background: color + "22", color, border: `1px solid ${color}55` }}
-        onClick={() => setOpen((o) => !o)}
+        onClick={openDropdown}
+        role="button"
+        tabIndex={0}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openDropdown(); }
+          if (e.key === "Escape") setOpen(false);
+        }}
       >
         {status}
       </span>
       {open && (
-        <div className={styles.statusDropdown}>
+        <div
+          className={styles.statusDropdown}
+          style={{ top: dropPos.top, left: dropPos.left }}
+        >
           {STATUSES.map((s) => (
             <div
               key={s.label}
@@ -101,10 +132,7 @@ function StatusBadge({ status, onSelect }) {
               onClick={() => { onSelect(s.label); setOpen(false); }}
               onKeyDown={(e) => {
                 if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  onSelect(s.label);
-                  setOpen(false);
+                  e.preventDefault(); onSelect(s.label); setOpen(false);
                 }
               }}
             >
@@ -118,14 +146,29 @@ function StatusBadge({ status, onSelect }) {
   );
 }
 
-// ── Assignee Chip (F3.1–F3.4) ───────────────────────────────
+// ── Assignee Chip (position:fixed dropdown to escape overflow:hidden) ──────────
 function AssigneeChip({ assigneeId, assigneeName, team, onSelect }) {
   const [open, setOpen] = useState(false);
-  const ref = useRef(null);
+  const [dropPos, setDropPos] = useState({ top: 0, left: 0 });
+  const chipRef = useRef(null);
+
+  const openDropdown = () => {
+    if (chipRef.current) {
+      const r = chipRef.current.getBoundingClientRect();
+      const spaceBelow = window.innerHeight - r.bottom;
+      const dropHeight = Math.min(team.length * 40 + 20, 280);
+      const top = spaceBelow > dropHeight ? r.bottom + 4 : r.top - dropHeight - 4;
+      const left = Math.max(4, r.left - 70); // center roughly under chip
+      setDropPos({ top, left });
+    }
+    setOpen((o) => !o);
+  };
 
   useEffect(() => {
     if (!open) return;
-    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    const handler = (e) => {
+      if (chipRef.current && !chipRef.current.contains(e.target)) setOpen(false);
+    };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, [open]);
@@ -133,25 +176,26 @@ function AssigneeChip({ assigneeId, assigneeName, team, onSelect }) {
   const initials = assigneeName ? assigneeName[0].toUpperCase() : "+";
 
   return (
-    <div ref={ref} className={styles.assigneeWrap} onClick={(e) => e.stopPropagation()}>
+    <div className={styles.assigneeWrap} onClick={(e) => e.stopPropagation()}>
       <span
+        ref={chipRef}
         className={`${styles.assigneeChip} ${!assigneeName ? styles.assigneeChipEmpty : ""}`}
         title={assigneeName ?? "Assign"}
-        onClick={() => setOpen((o) => !o)}
+        onClick={openDropdown}
         role="button"
         tabIndex={0}
         onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            e.stopPropagation();
-            setOpen((o) => !o);
-          }
+          if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openDropdown(); }
+          if (e.key === "Escape") setOpen(false);
         }}
       >
         {initials}
       </span>
       {open && (
-        <div className={styles.assigneeDropdown}>
+        <div
+          className={styles.assigneeDropdown}
+          style={{ top: dropPos.top, left: dropPos.left }}
+        >
           {team.map((m) => (
             <div
               key={m.id}
@@ -161,10 +205,7 @@ function AssigneeChip({ assigneeId, assigneeName, team, onSelect }) {
               tabIndex={0}
               onKeyDown={(e) => {
                 if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  onSelect(m.id);
-                  setOpen(false);
+                  e.preventDefault(); onSelect(m.id); setOpen(false);
                 }
               }}
             >
@@ -180,10 +221,7 @@ function AssigneeChip({ assigneeId, assigneeName, team, onSelect }) {
               tabIndex={0}
               onKeyDown={(e) => {
                 if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  onSelect(null);
-                  setOpen(false);
+                  e.preventDefault(); onSelect(null); setOpen(false);
                 }
               }}
             >
@@ -289,6 +327,7 @@ const Projects = () => {
   const { showError } = useError();
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuth();
 
   const [projects, setProjects]         = useState([]);
   const [customers, setCustomers]       = useState([]);
@@ -343,7 +382,13 @@ const Projects = () => {
     try {
       const [p, c, t] = await Promise.all([getProjects(), getCustomers(), getTeam()]);
       setProjects(p);
-      setCustomers(c);
+      // Deduplicate customers by name as a UI-level safeguard
+      const seen = new Set();
+      setCustomers(c.filter((cust) => {
+        if (seen.has(cust.name)) return false;
+        seen.add(cust.name);
+        return true;
+      }));
       setTeam(t);
     } catch (err) {
       showError(err.message);
@@ -702,7 +747,9 @@ const Projects = () => {
           </div>
           <div className={styles.headerRight}>
             <span className={styles.date}>{todayLabel}</span>
-            <button className={styles.addBtn} onClick={() => setShowModal(true)}>+ Add Project</button>
+            {ASSIGNER_ROLES.includes(user?.role) && (
+              <button className={styles.addBtn} onClick={() => setShowModal(true)}>+ Add Project</button>
+            )}
           </div>
         </div>
 
@@ -795,7 +842,7 @@ const Projects = () => {
                         {project.status}
                       </span>
                     </div>
-                    <div className={styles.dueCol}>{project.due_date ?? "—"}</div>
+                    <div className={styles.dueCol}>{formatDate(project.due_date)}</div>
                     <div className={styles.chevron}>{isOpen ? "▴" : "▾"}</div>
                   </div>
 
@@ -986,13 +1033,23 @@ const Projects = () => {
                                               </span>
                                             )}
 
-                                            {/* Assignee chip — F3.1–F3.4 */}
-                                            <AssigneeChip
-                                              assigneeId={subtask.assignee_id}
-                                              assigneeName={subtask.assignee_name}
-                                              team={team}
-                                              onSelect={(id) => handleAssign(project.id, subtask.id, id)}
-                                            />
+                                            {/* Assignee chip — clickable for ADMIN/LEAD/MANAGER, read-only for MEMBER */}
+                                            {ASSIGNER_ROLES.includes(user?.role) ? (
+                                              <AssigneeChip
+                                                assigneeId={subtask.assignee_id}
+                                                assigneeName={subtask.assignee_name}
+                                                team={team}
+                                                onSelect={(id) => handleAssign(project.id, subtask.id, id)}
+                                              />
+                                            ) : (
+                                              <span
+                                                className={`${styles.assigneeChip} ${!subtask.assignee_name ? styles.assigneeChipEmpty : ""}`}
+                                                title={subtask.assignee_name ?? "Unassigned"}
+                                                style={{ cursor: "default" }}
+                                              >
+                                                {subtask.assignee_name ? subtask.assignee_name[0].toUpperCase() : "—"}
+                                              </span>
+                                            )}
 
                                             {/* Due date */}
                                             <input
@@ -1218,13 +1275,25 @@ const Projects = () => {
                       <option>New Opportunity</option>
                     </select>
                   </div>
-                  <div className={styles.field}>
-                    <label>Owner</label>
-                    <select value={editForm.owner_id} onChange={(e) => setEditForm({ ...editForm, owner_id: e.target.value })}>
-                      <option value="">Unassigned</option>
-                      {team.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
-                    </select>
-                  </div>
+                  {["ADMIN", "LEAD"].includes(user?.role) ? (
+                    <div className={styles.field}>
+                      <label>Owner</label>
+                      <select value={editForm.owner_id} onChange={(e) => setEditForm({ ...editForm, owner_id: e.target.value })}>
+                        <option value="">Unassigned</option>
+                        {team.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
+                      </select>
+                    </div>
+                  ) : (
+                    <div className={styles.field}>
+                      <label>Owner</label>
+                      <input
+                        type="text"
+                        value={team.find((m) => m.id === Number(editForm.owner_id))?.name ?? "Unassigned"}
+                        disabled
+                        style={{ opacity: 0.5, cursor: "not-allowed" }}
+                      />
+                    </div>
+                  )}
                 </div>
                 <div className={styles.formRow}>
                   <div className={styles.field}>

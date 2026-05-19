@@ -116,6 +116,9 @@ app.use("/api/auth", authLimiter, require("./src/routers/auth.routes"));
 if (!isProd) {
   app.post("/api/migrate", async (req, res, next) => {
     try {
+      const results = [];
+
+      // Migration 1: add password_hash column to users if missing
       const [cols] = await pool.execute(
         `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
          WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'users' AND COLUMN_NAME = 'password_hash'`,
@@ -125,8 +128,60 @@ if (!isProd) {
         await pool.execute(
           `ALTER TABLE users ADD COLUMN password_hash VARCHAR(255) DEFAULT NULL`
         );
+        results.push("added password_hash to users");
       }
-      res.json({ migrated: true, added: cols.length === 0 });
+
+      // Migration 2: create user_groups table if missing
+      await pool.execute(`
+        CREATE TABLE IF NOT EXISTS user_groups (
+          id              INT AUTO_INCREMENT PRIMARY KEY,
+          name            VARCHAR(100) NOT NULL UNIQUE,
+          privilege_level ENUM('MASTER_ADMIN','ADMIN','MANAGER','MEMBER') NOT NULL DEFAULT 'MEMBER',
+          description     TEXT DEFAULT NULL,
+          created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+      results.push("ensured user_groups table exists");
+
+      // Migration 3: add group_id column to users if missing
+      const [groupCol] = await pool.execute(
+        `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+         WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'users' AND COLUMN_NAME = 'group_id'`,
+        [process.env.DB_NAME]
+      );
+      if (groupCol.length === 0) {
+        await pool.execute(
+          `ALTER TABLE users ADD COLUMN group_id INT DEFAULT NULL,
+           ADD CONSTRAINT fk_users_group FOREIGN KEY (group_id) REFERENCES user_groups(id) ON DELETE SET NULL`
+        );
+        results.push("added group_id to users");
+      }
+
+      // Migration 4: seed a default MASTER_ADMIN group if none exists
+      const [[{ cnt }]] = await pool.execute(
+        "SELECT COUNT(*) AS cnt FROM user_groups WHERE privilege_level = 'MASTER_ADMIN'"
+      );
+      if (cnt === 0) {
+        await pool.execute(
+          `INSERT INTO user_groups (name, privilege_level, description)
+           VALUES ('Master Admins', 'MASTER_ADMIN', 'Full system access — cannot be deleted')`
+        );
+        results.push("seeded Master Admins group");
+      }
+
+      // Migration 5: seed a default Members group if none exists
+      const [[{ cnt: memberCnt }]] = await pool.execute(
+        "SELECT COUNT(*) AS cnt FROM user_groups WHERE privilege_level = 'MEMBER'"
+      );
+      if (memberCnt === 0) {
+        await pool.execute(
+          `INSERT INTO user_groups (name, privilege_level, description)
+           VALUES ('Members', 'MEMBER', 'Default group for new users — read-only access')`
+        );
+        results.push("seeded Members group");
+      }
+
+      res.json({ migrated: true, results });
     } catch (err) { next(err); }
   });
 }
@@ -151,6 +206,7 @@ app.get("/uploads/:customerId/:filename", requireAuth, (req, res) => {
 
 /* ── Protected routes ────────────────────────────────────────── */
 app.use("/api/users",        require("./src/routers/user.routes"));
+app.use("/api/user-groups",  require("./src/routers/userGroup.routes"));
 app.use("/api/team",         require("./src/routers/team.routes"));
 app.use("/api/customers",    require("./src/routers/customer.routes"));
 app.use("/api/projects",   require("./src/routers/project.routes"));

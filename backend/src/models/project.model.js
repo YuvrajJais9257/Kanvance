@@ -118,6 +118,50 @@ exports.getAll = async ({ page, limit } = {}) => {
   return rows;
 };
 
+// ── List projects visible to a specific user ─────────────────────
+// A user can see a project if:
+//   - they are the project owner, OR
+//   - they have at least one subtask assigned to them in that project
+exports.getAllForUser = async ({ page, limit } = {}, userId) => {
+  const pageNum  = Math.max(1, parseInt(page, 10)  || 1);
+  const limitNum = Math.min(200, Math.max(1, parseInt(limit, 10) || 200));
+  const offset   = (pageNum - 1) * limitNum;
+
+  const [rows] = await pool.query(
+    `SELECT
+       p.id,
+       p.customer_id,
+       c.name          AS customer_name,
+       p.name,
+       p.subtitle,
+       p.type,
+       p.owner_id,
+       u.name          AS owner_name,
+       p.status,
+       p.start_date,
+       p.due_date,
+       p.notes,
+       COUNT(s.id)                                    AS total_count,
+       SUM(s.status = 'Done')                         AS done_count,
+       ROUND(SUM(s.status = 'Done') / NULLIF(COUNT(s.id), 0) * 100) AS progress
+     FROM projects p
+     JOIN customers c ON c.id = p.customer_id
+     LEFT JOIN users u ON u.id = p.owner_id
+     LEFT JOIN activity_groups ag ON ag.project_id = p.id
+     LEFT JOIN subtasks s ON s.group_id = ag.id
+     WHERE p.owner_id = ${pool.escape(userId)}
+        OR EXISTS (
+          SELECT 1 FROM subtasks s2
+          JOIN activity_groups ag2 ON ag2.id = s2.group_id
+          WHERE ag2.project_id = p.id AND s2.assignee_id = ${pool.escape(userId)}
+        )
+     GROUP BY p.id
+     ORDER BY p.created_at DESC
+     LIMIT ${limitNum} OFFSET ${offset}`,
+  );
+  return rows;
+};
+
 // ── Single project with full task tree ──────────────────────────
 exports.getById = async (id) => {
   // Project row

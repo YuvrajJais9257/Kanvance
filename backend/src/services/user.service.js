@@ -36,10 +36,11 @@ exports.getById = async (id) => {
 };
 
 // ── Create ────────────────────────────────────────────────────
-exports.create = async ({ name, username, full_name, email, password, role, status }) => {
+exports.create = async ({ name, username, full_name, email, password, role, status, group_id }) => {
   if (!name || !name.trim())     throw bad("name is required");
   if (!email || !email.trim())   throw bad("email is required");
   if (!password)                 throw bad("password is required");
+  if (!group_id)                 throw bad("group_id is required — every user must belong to a group");
   if (!validateEmail(email))     throw bad("Invalid email format");
   if (!validatePassword(password)) throw bad("Password must be at least 8 characters and contain a letter and a number");
   if (role && !VALID_ROLES.includes(role))     throw bad(`role must be one of: ${VALID_ROLES.join(", ")}`);
@@ -64,6 +65,7 @@ exports.create = async ({ name, username, full_name, email, password, role, stat
     password_hash,
     role:          role ?? "MEMBER",
     status:        status ?? "active",
+    group_id:      group_id,
   });
 
   return UserModel.getById(id);
@@ -124,6 +126,10 @@ exports.deactivate = async (id) => {
 exports.softDelete = async (id) => {
   const existing = await UserModel.getById(id);
   if (!existing) throw notFound();
+  // Soft-delete the user (sets deleted_at + status=disabled).
+  // This automatically removes them from the team list (team query filters deleted/disabled).
+  // Also nullify assignee_id on any open subtasks so no orphan references remain.
   await UserModel.softDelete(id);
+  await UserModel.unassignOpenSubtasks(id);
   return { deleted: true, id: Number(id) };
 };

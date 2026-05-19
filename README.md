@@ -86,7 +86,7 @@ DB_HOST=localhost
 DB_PORT=3306
 DB_USER=root
 DB_PASSWORD=your_password
-DB_NAME=cyberark
+DB_NAME=project_management
 SESSION_SECRET=your_secret_here
 FRONTEND_URL=http://localhost:5173
 PORT=4000
@@ -101,11 +101,11 @@ VITE_API_URL=http://localhost:4000
 ### 3. Set Up the Database
 
 ```bash
-# Create the schema
-mysql -u root -p cyberark < backend/schema.sql
+# Create the schema (idempotent — safe to re-run)
+mysql -u root -p project_management < backend/schema.sql
 
 # (Optional) Seed sample data
-mysql -u root -p cyberark < backend/seed.sql
+mysql -u root -p project_management < backend/seed.sql
 ```
 
 ### 4. Run
@@ -146,11 +146,12 @@ Open [http://localhost:5173](http://localhost:5173) in your browser.
 │   │   ├── services/       # Business logic
 │   │   ├── middlewares/    # Auth, error handling, uploads
 │   │   └── config/         # DB pool, upload config
-│   ├── schema.sql          # Full DB schema
+│   ├── schema.sql          # Full DB schema (idempotent, IF NOT EXISTS)
+│   ├── seed.sql            # Sample data
 │   └── server.js           # Express app entry point
 └── frontend/
     └── src/
-        ├── components/     # Dashboard, Projects, Customers, MyTasks
+        ├── components/     # Dashboard, Projects, Customers, MyTasks, Users, AccessManagement
         ├── context/        # Auth & Error context providers
         ├── hooks/          # useAvailability
         ├── redux/          # Store + view slice

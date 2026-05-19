@@ -8,8 +8,9 @@ const pool = require("../config/db");
 
 // Safe columns returned in every list/get response
 const SAFE_COLS = `
-  id, name, username, full_name, email, role, status,
-  availability, last_login_at, created_at, updated_at
+  u.id, u.name, u.username, u.full_name, u.email, u.role, u.status,
+  u.availability, u.last_login_at, u.created_at, u.updated_at,
+  u.group_id, ug.name AS group_name, ug.privilege_level AS group_privilege_level
 `;
 
 // ── List users (paginated + filterable) ──────────────────────
@@ -18,30 +19,31 @@ exports.getAll = async ({ page = 1, limit = 50, search = "", role = "", status =
   const limitNum = Math.min(200, Math.max(1, parseInt(limit, 10) || 50));
   const offset   = (pageNum - 1) * limitNum;
 
-  const conditions = ["deleted_at IS NULL"];
+  const conditions = ["u.deleted_at IS NULL"];
   const params     = [];
 
   if (search) {
-    conditions.push("(name LIKE ? OR username LIKE ? OR email LIKE ? OR full_name LIKE ?)");
+    conditions.push("(u.name LIKE ? OR u.username LIKE ? OR u.email LIKE ? OR u.full_name LIKE ?)");
     const like = `%${search}%`;
     params.push(like, like, like, like);
   }
-  if (role)   { conditions.push("role = ?");   params.push(role); }
-  if (status) { conditions.push("status = ?"); params.push(status); }
+  if (role)   { conditions.push("u.role = ?");   params.push(role); }
+  if (status) { conditions.push("u.status = ?"); params.push(status); }
 
   const where = conditions.join(" AND ");
 
   // Total count for pagination metadata
   const [[{ total }]] = await pool.execute(
-    `SELECT COUNT(*) AS total FROM users WHERE ${where}`,
+    `SELECT COUNT(*) AS total FROM users u WHERE ${where}`,
     params
   );
 
   const [rows] = await pool.query(
     `SELECT ${SAFE_COLS}
-     FROM users
+     FROM users u
+     LEFT JOIN user_groups ug ON ug.id = u.group_id
      WHERE ${where}
-     ORDER BY name ASC
+     ORDER BY u.name ASC
      LIMIT ${limitNum} OFFSET ${offset}`,
     params
   );
@@ -52,7 +54,10 @@ exports.getAll = async ({ page = 1, limit = 50, search = "", role = "", status =
 // ── Get single user by id ────────────────────────────────────
 exports.getById = async (id) => {
   const [[row]] = await pool.execute(
-    `SELECT ${SAFE_COLS} FROM users WHERE id = ? AND deleted_at IS NULL`,
+    `SELECT ${SAFE_COLS}
+     FROM users u
+     LEFT JOIN user_groups ug ON ug.id = u.group_id
+     WHERE u.id = ? AND u.deleted_at IS NULL`,
     [id]
   );
   return row ?? null;
@@ -98,11 +103,11 @@ exports.usernameExists = async (username, excludeId = null) => {
 };
 
 // ── Create user ───────────────────────────────────────────────
-exports.create = async ({ name, username, full_name, email, password_hash, role = "MEMBER", status = "active" }) => {
+exports.create = async ({ name, username, full_name, email, password_hash, role = "MEMBER", status = "active", group_id = null }) => {
   const [result] = await pool.execute(
-    `INSERT INTO users (name, username, full_name, email, password_hash, role, status)
-     VALUES (?, ?, ?, ?, ?, ?, ?)`,
-    [name, username ?? null, full_name ?? null, email ?? null, password_hash ?? null, role, status]
+    `INSERT INTO users (name, username, full_name, email, password_hash, role, status, group_id)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    [name, username ?? null, full_name ?? null, email ?? null, password_hash ?? null, role, status, group_id]
   );
   return result.insertId;
 };
@@ -127,6 +132,14 @@ exports.update = async (id, data) => {
 exports.softDelete = async (id) => {
   await pool.execute(
     "UPDATE users SET deleted_at = NOW(), status = 'disabled' WHERE id = ?",
+    [id]
+  );
+};
+
+// ── Nullify assignee_id on open subtasks for a deleted user ──
+exports.unassignOpenSubtasks = async (id) => {
+  await pool.execute(
+    "UPDATE subtasks SET assignee_id = NULL WHERE assignee_id = ? AND status != 'Done'",
     [id]
   );
 };

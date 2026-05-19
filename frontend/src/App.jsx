@@ -1,11 +1,12 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import Projects       from './components/Projects/Projects';
-import Dashboard      from './components/Dashboard/Dashboard';
-import Customers      from './components/Customers/Customers';
-import MyTasks        from './components/MyTasks/MyTasks';
-import Users          from './components/Users/Users';
-import Login          from './components/Login/Login';
-import ProtectedRoute from './components/ProtectedRoute';
+import Projects          from './components/Projects/Projects';
+import Dashboard         from './components/Dashboard/Dashboard';
+import Customers         from './components/Customers/Customers';
+import MyTasks           from './components/MyTasks/MyTasks';
+import Users             from './components/Users/Users';
+import AccessManagement  from './components/AccessManagement/AccessManagement';
+import Login             from './components/Login/Login';
+import ProtectedRoute    from './components/ProtectedRoute';
 import { ErrorProvider } from './context/ErrorContext';
 import { AuthProvider }  from './context/AuthContext';
 
@@ -33,6 +34,9 @@ function App() {
             } />
             <Route path="/users" element={
               <ProtectedRoute><Users /></ProtectedRoute>
+            } />
+            <Route path="/access" element={
+              <ProtectedRoute><AccessManagement /></ProtectedRoute>
             } />
 
             {/* Fallback */}

@@ -200,7 +200,7 @@ function AssigneeChip({ assigneeId, assigneeName, team, onSelect }) {
             <div
               key={m.id}
               className={`${styles.assigneeOption} ${m.id === assigneeId ? styles.assigneeOptionActive : ""}`}
-              onClick={() => { onSelect(m.id); setOpen(false); }}
+              onMouseDown={(e) => { e.preventDefault(); onSelect(m.id); setOpen(false); }}
               role="option"
               tabIndex={0}
               onKeyDown={(e) => {
@@ -216,7 +216,7 @@ function AssigneeChip({ assigneeId, assigneeName, team, onSelect }) {
           {assigneeId && (
             <div
               className={`${styles.assigneeOption} ${styles.unassignOption}`}
-              onClick={() => { onSelect(null); setOpen(false); }}
+              onMouseDown={(e) => { e.preventDefault(); onSelect(null); setOpen(false); }}
               role="option"
               tabIndex={0}
               onKeyDown={(e) => {
@@ -592,7 +592,7 @@ const Projects = () => {
   // ── Phase 3 — Assign subtask ──────────────────────────────
   const handleAssign = async (projectId, subtaskId, assigneeId) => {
     try {
-      await updateSubtask(subtaskId, { assignee_id: assigneeId ?? null });
+      await updateSubtask(subtaskId, { assignee_id: assigneeId ?? null, _changedBy: user?.id });
       await reloadExpanded(projectId);
     } catch (err) { showError(err.message); }
   };

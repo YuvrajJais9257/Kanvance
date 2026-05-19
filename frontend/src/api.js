@@ -131,3 +131,12 @@ export const createUser    = (data)   => USE_API ? post("/api/users", data)     
 export const updateUser    = (id, d)  => USE_API ? request("PATCH", `/api/users/${id}`, d) : Promise.resolve();
 export const deactivateUser = (id)   => USE_API ? request("PATCH", `/api/users/${id}/deactivate`) : Promise.resolve();
 export const deleteUser    = (id)     => USE_API ? del(`/api/users/${id}`)           : Promise.resolve();
+
+// ── User Groups (access management) ──────────────────────────
+export const getUserGroups       = ()          => USE_API ? get("/api/user-groups")                    : Promise.resolve([]);
+export const getUserGroup        = (id)        => USE_API ? get(`/api/user-groups/${id}`)              : Promise.resolve(null);
+export const getUserGroupMembers = (id)        => USE_API ? get(`/api/user-groups/${id}/members`)      : Promise.resolve([]);
+export const createUserGroup     = (data)      => USE_API ? post("/api/user-groups", data)             : Promise.resolve({ id: Date.now() });
+export const updateUserGroup     = (id, data)  => USE_API ? request("PATCH", `/api/user-groups/${id}`, data) : Promise.resolve();
+export const deleteUserGroup     = (id)        => USE_API ? del(`/api/user-groups/${id}`)              : Promise.resolve();
+export const assignUserToGroup   = (groupId, userId) => USE_API ? post(`/api/user-groups/${groupId}/assign`, { user_id: userId }) : Promise.resolve();

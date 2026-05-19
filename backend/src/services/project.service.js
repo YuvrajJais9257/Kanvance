@@ -2,6 +2,8 @@ const ProjectModel = require("../models/project.model");
 
 exports.getAll = (opts) => ProjectModel.getAll(opts);
 
+exports.getAllForUser = (opts, userId) => ProjectModel.getAllForUser(opts, userId);
+
 exports.getById = async (id) => {
   const project = await ProjectModel.getById(id);
   if (!project) throw Object.assign(new Error("Project not found"), { status: 404 });

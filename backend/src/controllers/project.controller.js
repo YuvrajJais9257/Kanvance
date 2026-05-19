@@ -23,13 +23,40 @@ function isChangingOwner(req, project) {
 exports.getAll = async (req, res, next) => {
   try {
     const { page, limit } = req.query;
-    res.json(await ProjectService.getAll({ page, limit }));
+    const role   = req.session.userRole ?? "MEMBER";
+    const userId = req.session.userId;
+
+    // ADMIN sees all projects; everyone else only sees projects they own
+    // or have at least one subtask assigned to them in.
+    if (role === "ADMIN") {
+      res.json(await ProjectService.getAll({ page, limit }));
+    } else {
+      res.json(await ProjectService.getAllForUser({ page, limit }, userId));
+    }
   } catch (err) { next(err); }
 };
 
 exports.getById = async (req, res, next) => {
   try {
-    res.json(await ProjectService.getById(req.params.id));
+    const project = await ProjectService.getById(req.params.id);
+    const role    = req.session.userRole ?? "MEMBER";
+    const userId  = req.session.userId;
+
+    // Non-admins can only view projects they own or are assigned to
+    if (role !== "ADMIN") {
+      const isOwner    = project.owner_id === userId;
+      const [assigned] = await require("../config/db").execute(
+        `SELECT 1 FROM subtasks s
+         JOIN activity_groups ag ON ag.id = s.group_id
+         WHERE ag.project_id = ? AND s.assignee_id = ? LIMIT 1`,
+        [project.id, userId]
+      );
+      if (!isOwner && assigned.length === 0) {
+        return res.status(403).json({ error: "You do not have access to this project" });
+      }
+    }
+
+    res.json(project);
   } catch (err) { next(err); }
 };
 

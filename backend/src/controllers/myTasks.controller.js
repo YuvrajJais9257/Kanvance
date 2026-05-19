@@ -6,7 +6,9 @@ exports.getByMember = async (req, res, next) => {
     if (!memberId) {
       return res.status(400).json({ error: "member_id query param is required" });
     }
-    res.json(await MyTasksModel.getByMember(memberId));
+    const requestingUserId = req.session.userId;
+    const requestingRole   = req.session.userRole ?? "MEMBER";
+    res.json(await MyTasksModel.getByMember(memberId, requestingUserId, requestingRole));
   } catch (err) {
     next(err);
   }

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Sidebar from "../sidebar/Sidebar";
 import styles from "./Users.module.css";
-import { getUsers, createUser, updateUser, deactivateUser, deleteUser } from "../../api";
+import { getUsers, createUser, updateUser, deactivateUser, deleteUser, getUserGroups, assignUserToGroup } from "../../api";
 import { useError } from "../../context/ErrorContext";
 import { useAuth } from "../../context/AuthContext";
 
@@ -23,7 +23,7 @@ const ROLE_COLORS = {
 
 const blankForm = {
   name: "", username: "", full_name: "", email: "",
-  password: "", role: "MEMBER", status: "active",
+  password: "", role: "MEMBER", status: "active", group_id: "",
 };
 
 export default function Users() {
@@ -53,6 +53,9 @@ export default function Users() {
   // ── Confirm delete ──────────────────────────────────────────
   const [confirmDelete, setConfirmDelete] = useState(null);
 
+  // ── Groups ──────────────────────────────────────────────────
+  const [groups, setGroups] = useState([]);
+
   const LIMIT = 20;
 
   // ── Load ────────────────────────────────────────────────────
@@ -71,6 +74,13 @@ export default function Users() {
 
   useEffect(() => { load(); }, [load]);
 
+  // Load groups for the group picker
+  useEffect(() => {
+    if (isAdmin) {
+      getUserGroups().then(setGroups).catch(() => {});
+    }
+  }, [isAdmin]);
+
   // ── Open create modal ────────────────────────────────────────
   const openCreate = () => {
     setForm(blankForm);
@@ -88,6 +98,7 @@ export default function Users() {
       password:  "",
       role:      u.role      ?? "MEMBER",
       status:    u.status    ?? "active",
+      group_id:  u.group_id  ?? "",
     });
     setEditing(u);
     setModal("edit");
@@ -96,6 +107,10 @@ export default function Users() {
   // ── Save (create or update) ──────────────────────────────────
   const handleSave = async (e) => {
     e.preventDefault();
+    if (modal === "create" && !form.group_id) {
+      showError("Please select a group for this user.");
+      return;
+    }
     setSaving(true);
     try {
       if (modal === "create") {
@@ -103,6 +118,11 @@ export default function Users() {
       } else {
         const patch = { ...form };
         if (!patch.password) delete patch.password; // don't send empty password
+        // Handle group change via assign endpoint
+        if (patch.group_id && patch.group_id !== editing.group_id) {
+          await assignUserToGroup(patch.group_id, editing.id);
+        }
+        delete patch.group_id; // group is managed separately
         await updateUser(editing.id, patch);
       }
       setModal(null);
@@ -182,6 +202,7 @@ export default function Users() {
                     <th>Username</th>
                     <th>Email</th>
                     <th>Role</th>
+                    <th>Group</th>
                     <th>Status</th>
                     <th>Last Login</th>
                     {(isAdmin || isManager) && <th>Actions</th>}
@@ -213,6 +234,11 @@ export default function Users() {
                         <td>
                           <span className={styles.badge} style={{ background: rc.bg, color: rc.color }}>
                             {u.role}
+                          </span>
+                        </td>
+                        <td>
+                          <span className={styles.badge} style={{ background: "rgba(99,102,241,0.12)", color: "#818cf8" }}>
+                            {u.group_name ?? "—"}
                           </span>
                         </td>
                         <td>
@@ -310,6 +336,28 @@ export default function Users() {
                     </div>
                   </div>
                 )}
+                {isAdmin && (
+                  <div className={styles.field}>
+                    <label>Group {modal === "create" ? "*" : ""}</label>
+                    <select
+                      value={form.group_id}
+                      required={modal === "create"}
+                      onChange={(e) => setForm({ ...form, group_id: e.target.value ? Number(e.target.value) : "" })}
+                    >
+                      <option value="">— Select a group —</option>
+                      {groups.map((g) => (
+                        <option key={g.id} value={g.id}>
+                          {g.name} ({g.privilege_level})
+                        </option>
+                      ))}
+                    </select>
+                    {modal === "create" && (
+                      <small style={{ color: "#64748b", marginTop: "4px", display: "block" }}>
+                        Every user must belong to a group. Groups control access privileges.
+                      </small>
+                    )}
+                  </div>
+                )}
                 <div className={styles.modalActions}>
                   <button type="button" className={styles.cancelBtn} onClick={() => setModal(null)}>Cancel</button>
                   <button type="submit" className={styles.saveBtn} disabled={saving}>
@@ -332,7 +380,8 @@ export default function Users() {
               <div className={styles.form}>
                 <p style={{ color: "#94a3b8", lineHeight: 1.6 }}>
                   Delete <strong style={{ color: "#f1f5f9" }}>{confirmDelete.name}</strong>?
-                  This is a soft delete — the account will be hidden but data is preserved.
+                  This will remove them from the system and all team lists. Any open tasks assigned to them will be unassigned.
+                  Their data is preserved (soft delete).
                 </p>
                 <div className={styles.modalActions}>
                   <button className={styles.cancelBtn} onClick={() => setConfirmDelete(null)}>Cancel</button>

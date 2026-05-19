@@ -51,6 +51,8 @@ const Sidebar = () => {
     { label: "My Tasks",  path: "/my-tasks" },
     // Users page — visible to ADMIN, LEAD, and MANAGER
     ...( ["ADMIN","LEAD","MANAGER"].includes(user?.role) ? [{ label: "Users", path: "/users" }] : [] ),
+    // Access & Group Management — ADMIN only
+    ...( user?.role === "ADMIN" ? [{ label: "Access & Groups", path: "/access" }] : [] ),
   ];
 
   return (

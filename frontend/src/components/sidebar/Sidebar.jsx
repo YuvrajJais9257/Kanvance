@@ -45,12 +45,15 @@ const Sidebar = () => {
   };
 
   const navItems = [
-    { label: "Dashboard", path: "/dashboard" },
-    { label: "Projects",  path: "/" },
-    { label: "Customers", path: "/customers" },
-    { label: "My Tasks",  path: "/my-tasks" },
+    { label: "Dashboard",      path: "/dashboard" },
+    { label: "Projects",       path: "/" },
+    { label: "Customers",      path: "/customers" },
+    { label: "My Tasks",       path: "/my-tasks" },
+    { label: "Analytics",      path: "/analytics" },
     // Users page — visible to ADMIN, LEAD, and MANAGER
     ...( ["ADMIN","LEAD","MANAGER"].includes(user?.role) ? [{ label: "Users", path: "/users" }] : [] ),
+    // Reports — visible to ADMIN, LEAD, MANAGER
+    ...( ["ADMIN","LEAD","MANAGER"].includes(user?.role) ? [{ label: "Reports", path: "/reports" }] : [] ),
     // Access & Group Management — ADMIN only
     ...( user?.role === "ADMIN" ? [{ label: "Access & Groups", path: "/access" }] : [] ),
   ];

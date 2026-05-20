@@ -3,21 +3,19 @@ const pool = require("../config/db");
 /**
  * getByMember(memberId, requestingUserId, requestingRole)
  *
- * Returns subtasks assigned to `memberId`, ordered by urgency.
+ * Returns subtasks for `memberId` using owner-inheritance:
+ *   - Explicitly assigned subtasks (s.assignee_id = memberId)
+ *   - Unassigned subtasks on projects owned by memberId (inherited)
  *
  * Visibility rules:
- *  - ADMIN / MANAGER: can see tasks for any member
- *  - MEMBER: can only see tasks for members who share at least one project
- *    with them (project-based visibility), or their own tasks
+ *  - ADMIN / LEAD / MANAGER: can see tasks for any member
+ *  - MEMBER: can only see their own tasks or tasks on shared projects
  */
 exports.getByMember = async (memberId, requestingUserId, requestingRole) => {
   const isPrivileged = ["ADMIN", "LEAD", "MANAGER"].includes(requestingRole);
   const isSelf = String(memberId) === String(requestingUserId);
 
-  // Non-privileged users can only view tasks for themselves or members
-  // who share a project with them.
   if (!isPrivileged && !isSelf) {
-    // Check if requestingUser and memberId share at least one project
     const [shared] = await pool.execute(
       `SELECT COUNT(*) AS cnt
        FROM projects p1
@@ -34,41 +32,105 @@ exports.getByMember = async (memberId, requestingUserId, requestingRole) => {
        ))`,
       [requestingUserId, requestingUserId, memberId, memberId]
     );
-    if (shared[0].cnt === 0) {
-      return []; // no shared project — return empty
-    }
+    if (shared[0].cnt === 0) return [];
   }
 
-  const [rows] = await pool.execute(
+  // ── Explicitly assigned subtasks ──────────────────────────────────────────
+  const [explicit] = await pool.execute(
     `SELECT
-       s.id          AS subtask_id,
-       s.name        AS subtask_name,
+       s.id              AS subtask_id,
+       s.name            AS subtask_name,
        s.status,
        s.due_date,
        s.flag_type,
        s.flag_reason,
        s.flag_waiting_on,
-       ag.id         AS group_id,
-       ag.name       AS group_name,
-       p.id          AS project_id,
-       c.name        AS customer_name
+       s.assignee_id,
+       ag.id             AS group_id,
+       ag.name           AS group_name,
+       p.id              AS project_id,
+       p.owner_id,
+       c.name            AS customer_name,
+       0                 AS inherited
      FROM subtasks s
      JOIN activity_groups ag ON ag.id = s.group_id
      JOIN projects p         ON p.id  = ag.project_id
      JOIN customers c        ON c.id  = p.customer_id
-     WHERE s.assignee_id = ?
-     ORDER BY
-       -- 1. overdue + not Done
-       CASE WHEN s.due_date < CURDATE() AND s.status != 'Done' THEN 0 ELSE 1 END,
-       -- 2. due within 7 days + not Done
-       CASE WHEN s.due_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 7 DAY)
-                 AND s.status != 'Done' THEN 0 ELSE 1 END,
-       -- 3. not Done, no due date
-       CASE WHEN s.status != 'Done' AND s.due_date IS NULL THEN 0 ELSE 1 END,
-       -- 4. Done last
-       CASE WHEN s.status = 'Done' THEN 1 ELSE 0 END,
-       s.due_date ASC`,
+     WHERE s.assignee_id = ?`,
     [memberId]
   );
+
+  // ── Inherited: unassigned subtasks on projects owned by memberId ──────────
+  const [inherited] = await pool.execute(
+    `SELECT
+       s.id              AS subtask_id,
+       s.name            AS subtask_name,
+       s.status,
+       s.due_date,
+       s.flag_type,
+       s.flag_reason,
+       s.flag_waiting_on,
+       s.assignee_id,
+       ag.id             AS group_id,
+       ag.name           AS group_name,
+       p.id              AS project_id,
+       p.owner_id,
+       c.name            AS customer_name,
+       1                 AS inherited
+     FROM subtasks s
+     JOIN activity_groups ag ON ag.id = s.group_id
+     JOIN projects p         ON p.id  = ag.project_id
+     JOIN customers c        ON c.id  = p.customer_id
+     WHERE p.owner_id = ?
+       AND s.assignee_id IS NULL`,
+    [memberId]
+  );
+
+  // Merge, deduplicate (explicit wins if same subtask_id appears in both)
+  const seen = new Set();
+  const rows = [];
+  for (const r of [...explicit, ...inherited]) {
+    if (!seen.has(r.subtask_id)) {
+      seen.add(r.subtask_id);
+      rows.push(r);
+    }
+  }
+
+  // Sort: overdue → due soon → not done → done
+  rows.sort((a, b) => {
+    const today = new Date().toISOString().split("T")[0];
+    const in7   = new Date(Date.now() + 7 * 86400000).toISOString().split("T")[0];
+
+    const score = (r) => {
+      if (r.status === "Done") return 4;
+      const d = r.due_date ? r.due_date.split("T")[0] : null;
+      if (d && d < today) return 0;
+      if (d && d <= in7)  return 1;
+      if (!d)             return 2;
+      return 3;
+    };
+
+    const diff = score(a) - score(b);
+    if (diff !== 0) return diff;
+    if (a.due_date && b.due_date) return a.due_date.localeCompare(b.due_date);
+    return 0;
+  });
+
   return rows;
+};
+
+/**
+ * countUnassigned(projectId)
+ * Returns the number of subtasks with no assignee for a given project.
+ * Used by the project view to show the "N tasks defaulting to owner" banner.
+ */
+exports.countUnassigned = async (projectId) => {
+  const [[row]] = await pool.execute(
+    `SELECT COUNT(*) AS cnt
+     FROM subtasks s
+     JOIN activity_groups ag ON ag.id = s.group_id
+     WHERE ag.project_id = ? AND s.assignee_id IS NULL`,
+    [projectId]
+  );
+  return Number(row.cnt);
 };

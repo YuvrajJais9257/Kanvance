@@ -184,7 +184,14 @@ export default function MyTasks() {
                       <div key={task.subtask_id} className={`${styles.taskRow} ${urg}`}>
                         <div className={styles.taskMain}>
                           <div className={styles.taskGroupName}>{task.group_name}</div>
-                          <div className={styles.taskName}>{task.subtask_name}</div>
+                          <div className={styles.taskName}>
+                            {task.subtask_name}
+                            {task.inherited ? (
+                              <span className={styles.inheritedLabel} title="No explicit assignee — inherited from project owner">
+                                owner default
+                              </span>
+                            ) : null}
+                          </div>
                         </div>
 
                         <div className={styles.taskMeta}>

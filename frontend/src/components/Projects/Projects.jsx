@@ -147,7 +147,7 @@ function StatusBadge({ status, onSelect }) {
 }
 
 // ── Assignee Chip (position:fixed dropdown to escape overflow:hidden) ──────────
-function AssigneeChip({ assigneeId, assigneeName, team, onSelect }) {
+function AssigneeChip({ assigneeId, assigneeName, inherited, team, onSelect }) {
   const [open, setOpen] = useState(false);
   const [dropPos, setDropPos] = useState({ top: 0, left: 0 });
   const chipRef = useRef(null);
@@ -158,7 +158,7 @@ function AssigneeChip({ assigneeId, assigneeName, team, onSelect }) {
       const spaceBelow = window.innerHeight - r.bottom;
       const dropHeight = Math.min(team.length * 40 + 20, 280);
       const top = spaceBelow > dropHeight ? r.bottom + 4 : r.top - dropHeight - 4;
-      const left = Math.max(4, r.left - 70); // center roughly under chip
+      const left = Math.max(4, r.left - 70);
       setDropPos({ top, left });
     }
     setOpen((o) => !o);
@@ -174,13 +174,16 @@ function AssigneeChip({ assigneeId, assigneeName, team, onSelect }) {
   }, [open]);
 
   const initials = assigneeName ? assigneeName[0].toUpperCase() : "+";
+  const title = inherited
+    ? `${assigneeName} (project owner — no explicit assignee)`
+    : (assigneeName ?? "Assign");
 
   return (
     <div className={styles.assigneeWrap} onClick={(e) => e.stopPropagation()}>
       <span
         ref={chipRef}
-        className={`${styles.assigneeChip} ${!assigneeName ? styles.assigneeChipEmpty : ""}`}
-        title={assigneeName ?? "Assign"}
+        className={`${styles.assigneeChip} ${!assigneeName ? styles.assigneeChipEmpty : ""} ${inherited ? styles.assigneeChipInherited : ""}`}
+        title={title}
         onClick={openDropdown}
         role="button"
         tabIndex={0}
@@ -196,6 +199,11 @@ function AssigneeChip({ assigneeId, assigneeName, team, onSelect }) {
           className={styles.assigneeDropdown}
           style={{ top: dropPos.top, left: dropPos.left }}
         >
+          {inherited && (
+            <div className={styles.assigneeInheritedNote}>
+              Inherited from project owner. Click a name to assign explicitly.
+            </div>
+          )}
           {team.map((m) => (
             <div
               key={m.id}
@@ -213,7 +221,7 @@ function AssigneeChip({ assigneeId, assigneeName, team, onSelect }) {
               {m.name}
             </div>
           ))}
-          {assigneeId && (
+          {assigneeId && !inherited && (
             <div
               className={`${styles.assigneeOption} ${styles.unassignOption}`}
               onMouseDown={(e) => { e.preventDefault(); onSelect(null); setOpen(false); }}
@@ -854,6 +862,12 @@ const Projects = () => {
                           {(full.groups ?? []).reduce((s, g) => s + g.completed, 0)}/
                           {(full.groups ?? []).reduce((s, g) => s + g.total, 0)} sub-tasks completed
                         </div>
+                        {/* Unassigned warning banner */}
+                        {full.unassigned_count > 0 && full.owner_name && (
+                          <div className={styles.unassignedBanner}>
+                            ⚠ {full.unassigned_count} subtask{full.unassigned_count !== 1 ? "s" : ""} have no explicit assignee — defaulting to project owner <strong>{full.owner_name}</strong>
+                          </div>
+                        )}
                         <div className={styles.actionGroup}>
                           <button className={styles.secondaryBtn} onClick={() => openEditModal(project)}>
                             Edit project
@@ -1036,15 +1050,16 @@ const Projects = () => {
                                             {/* Assignee chip — clickable for ADMIN/LEAD/MANAGER, read-only for MEMBER */}
                                             {ASSIGNER_ROLES.includes(user?.role) ? (
                                               <AssigneeChip
-                                                assigneeId={subtask.assignee_id}
+                                                assigneeId={subtask.effective_assignee_id ?? subtask.assignee_id}
                                                 assigneeName={subtask.assignee_name}
+                                                inherited={!!subtask.inherited}
                                                 team={team}
                                                 onSelect={(id) => handleAssign(project.id, subtask.id, id)}
                                               />
                                             ) : (
                                               <span
-                                                className={`${styles.assigneeChip} ${!subtask.assignee_name ? styles.assigneeChipEmpty : ""}`}
-                                                title={subtask.assignee_name ?? "Unassigned"}
+                                                className={`${styles.assigneeChip} ${!subtask.assignee_name ? styles.assigneeChipEmpty : ""} ${subtask.inherited ? styles.assigneeChipInherited : ""}`}
+                                                title={subtask.inherited ? `${subtask.assignee_name} (owner default)` : (subtask.assignee_name ?? "Unassigned")}
                                                 style={{ cursor: "default" }}
                                               >
                                                 {subtask.assignee_name ? subtask.assignee_name[0].toUpperCase() : "—"}

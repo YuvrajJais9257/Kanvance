@@ -1459,3 +1459,37 @@
   outline: none;
   box-shadow: 0 0 0 3px rgba(103, 160, 255, 0.35), 0 0 0 1px rgba(103, 160, 255, 0.55);
 }
+
+/* ── Owner-inheritance styles ───────────────────────────────── */
+
+/* Dashed border = inherited from project owner, not explicitly assigned */
+.assigneeChipInherited {
+  border: 2px dashed #475569 !important;
+  opacity: 0.7;
+  background: transparent !important;
+  color: #64748b !important;
+}
+
+/* Small note at top of assignee dropdown when inherited */
+.assigneeInheritedNote {
+  font-size: 11px;
+  color: #64748b;
+  padding: 8px 12px 6px;
+  border-bottom: 1px solid #334155;
+  line-height: 1.4;
+  font-style: italic;
+}
+
+/* Warning banner: "N subtasks defaulting to owner" */
+.unassignedBanner {
+  font-size: 12px;
+  color: #f59e0b;
+  background: rgba(245,158,11,0.08);
+  border: 1px solid rgba(245,158,11,0.2);
+  border-radius: 6px;
+  padding: 6px 12px;
+  margin: 6px 0 0;
+}
+.unassignedBanner strong {
+  color: #fbbf24;
+}

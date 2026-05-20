@@ -201,16 +201,25 @@ exports.getById = async (id) => {
     const [rows] = await pool.execute(
       `SELECT
          s.id, s.group_id, s.name, s.status, s.due_date,
-         s.assignee_id, u.name AS assignee_name,
+         s.assignee_id,
+         CASE WHEN s.assignee_id IS NULL THEN p.owner_id ELSE s.assignee_id END AS effective_assignee_id,
+         CASE WHEN s.assignee_id IS NULL THEN u_owner.name ELSE u_assign.name END AS assignee_name,
+         CASE WHEN s.assignee_id IS NULL AND p.owner_id IS NOT NULL THEN 1 ELSE 0 END AS inherited,
          s.flag_type, s.flag_reason, s.flag_waiting_on, s.position
        FROM subtasks s
-       LEFT JOIN users u ON u.id = s.assignee_id
+       JOIN activity_groups ag ON ag.id = s.group_id
+       JOIN projects p         ON p.id  = ag.project_id
+       LEFT JOIN users u_assign ON u_assign.id = s.assignee_id
+       LEFT JOIN users u_owner  ON u_owner.id  = p.owner_id
        WHERE s.group_id IN (${placeholders})
        ORDER BY s.position`,
       groupIds
     );
     subtasks = rows;
   }
+
+  // Count unassigned subtasks for the warning banner
+  const unassignedCount = subtasks.filter((s) => s.assignee_id === null).length;
 
   // Nest subtasks into groups
   project.groups = groups.map((g) => {
@@ -222,6 +231,8 @@ exports.getById = async (id) => {
       subtasks: subs,
     };
   });
+
+  project.unassigned_count = unassignedCount;
 
   return project;
 };

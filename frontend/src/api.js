@@ -140,3 +140,56 @@ export const createUserGroup     = (data)      => USE_API ? post("/api/user-grou
 export const updateUserGroup     = (id, data)  => USE_API ? request("PATCH", `/api/user-groups/${id}`, data) : Promise.resolve();
 export const deleteUserGroup     = (id)        => USE_API ? del(`/api/user-groups/${id}`)              : Promise.resolve();
 export const assignUserToGroup   = (groupId, userId) => USE_API ? post(`/api/user-groups/${groupId}/assign`, { user_id: userId }) : Promise.resolve();
+
+// ── Timesheet (Reports) ───────────────────────────────────────
+export const downloadTimesheetTemplate = () => {
+  // Direct browser download — not a JSON fetch
+  window.open(`${BASE}/api/timesheet/template`, "_blank");
+};
+export const uploadTimesheetFile  = (formData) => {
+  if (!USE_API) return Promise.resolve({ rows: [], row_count: 0 });
+  return fetch(`${BASE}/api/timesheet/upload`, {
+    method: "POST",
+    credentials: "include",
+    body: formData,
+  }).then(async (res) => {
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+    return data;
+  });
+};
+export const enrichTimesheet      = (rows)         => USE_API ? post("/api/timesheet/enrich", { rows })          : Promise.resolve({ rows: [], row_count: 0 });
+export const exportTimesheet      = (rows, filename) => {
+  if (!USE_API) return Promise.resolve();
+  // Binary download — use fetch + blob
+  return fetch(`${BASE}/api/timesheet/export`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify({ rows, filename }),
+  }).then(async (res) => {
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.error || `HTTP ${res.status}`);
+    }
+    const blob = await res.blob();
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement("a");
+    a.href     = url;
+    a.download = filename || "timesheet_enriched.xlsx";
+    a.click();
+    URL.revokeObjectURL(url);
+  });
+};
+export const getTimesheetRuns     = ()             => USE_API ? get("/api/timesheet/runs")                        : Promise.resolve([]);
+export const getTimesheetRunRows  = (id)           => USE_API ? get(`/api/timesheet/runs/${id}/rows`)             : Promise.resolve([]);
+
+// ── Analytics ─────────────────────────────────────────────────
+export const getAnalyticsSummary       = ()        => USE_API ? get("/api/analytics/summary")          : Promise.resolve({});
+export const getTaskCompletion         = ()        => USE_API ? get("/api/analytics/task-completion")  : Promise.resolve([]);
+export const getTeamUtilisation        = ()        => USE_API ? get("/api/analytics/team-utilisation") : Promise.resolve([]);
+export const getHoursPerPerson         = ()        => USE_API ? get("/api/analytics/hours-per-person") : Promise.resolve([]);
+export const getBlockedTasks           = ()        => USE_API ? get("/api/analytics/blocked-tasks")    : Promise.resolve([]);
+export const getProgressTrend          = ()        => USE_API ? get("/api/analytics/progress-trend")   : Promise.resolve([]);
+export const getStatusBreakdown        = ()        => USE_API ? get("/api/analytics/status-breakdown") : Promise.resolve([]);
+export const getHoursPerDay            = (days)    => USE_API ? get(`/api/analytics/hours-per-day${days ? "?days=" + days : ""}`) : Promise.resolve([]);

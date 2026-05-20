@@ -5,6 +5,8 @@ import Customers         from './components/Customers/Customers';
 import MyTasks           from './components/MyTasks/MyTasks';
 import Users             from './components/Users/Users';
 import AccessManagement  from './components/AccessManagement/AccessManagement';
+import Reports           from './components/Reports/Reports';
+import Analytics         from './components/Analytics/Analytics';
 import Login             from './components/Login/Login';
 import ProtectedRoute    from './components/ProtectedRoute';
 import { ErrorProvider } from './context/ErrorContext';
@@ -37,6 +39,12 @@ function App() {
             } />
             <Route path="/access" element={
               <ProtectedRoute><AccessManagement /></ProtectedRoute>
+            } />
+            <Route path="/reports" element={
+              <ProtectedRoute><Reports /></ProtectedRoute>
+            } />
+            <Route path="/analytics" element={
+              <ProtectedRoute><Analytics /></ProtectedRoute>
             } />
 
             {/* Fallback */}

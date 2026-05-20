@@ -218,6 +218,8 @@ app.use("/api/infra",      require("./src/routers/infra.routes"));
 app.use("/api/dashboard",  require("./src/routers/dashboard.routes"));
 app.use("/api/my-tasks",     require("./src/routers/myTasks.routes"));
 app.use("/api/availability", require("./src/routers/availability.routes"));
+app.use("/api/timesheet",    require("./src/routers/timesheet.routes"));
+app.use("/api/analytics",    require("./src/routers/analytics.routes"));
 
 /* ── Dev-only seed endpoint ──────────────────────────────────── */
 if (!isProd) {

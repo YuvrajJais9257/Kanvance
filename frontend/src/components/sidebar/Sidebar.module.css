@@ -3,7 +3,7 @@
   position: fixed;
   top: 0;
   left: 0;
-  width: 260px;
+  width: 280px;
   height: 100vh;
   display: flex;
   flex-direction: column;
@@ -16,24 +16,25 @@
 
 /* ── Logo ── */
 .logo {
-  padding: 26px 22px 20px;
+  padding: 28px 24px 24px;
   border-bottom: 1px solid var(--border-subtle);
   display: flex;
   flex-direction: column;
   position: relative;
+  background: var(--gradient-sidebar);
 }
 
 .bellWrap {
   position: absolute;
-  top: 20px;
-  right: 16px;
+  top: 24px;
+  right: 20px;
 }
 
 .logo h2 {
   margin: 0;
-  font-size: 17px;
+  font-size: 1.125rem;
   font-weight: 800;
-  letter-spacing: 2px;
+  letter-spacing: 2.5px;
   background: var(--gradient-accent);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -43,23 +44,25 @@
 
 .logo span {
   display: block;
-  margin-top: 5px;
-  font-size: 11px;
+  margin-top: 6px;
+  font-size: 0.6875rem;
   letter-spacing: 0.5px;
   color: var(--text-muted);
-  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  font-family: "SF Mono", "Fira Code", Consolas, monospace;
 }
 
 /* ── Nav sections ── */
 .section {
-  padding: 22px 10px 0;
+  padding: 24px 14px 0;
+  flex: 1;
+  overflow-y: auto;
 }
 
 .sectionTitle {
-  margin: 0 0 10px 12px;
-  font-size: 0.65rem;
+  margin: 0 0 12px 14px;
+  font-size: 0.625rem;
   font-weight: 700;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.12em;
   color: var(--text-muted);
   text-transform: uppercase;
 }
@@ -68,15 +71,15 @@
 .menuItem {
   display: flex;
   align-items: center;
-  gap: 11px;
+  gap: 12px;
   width: 100%;
-  padding: 10px 14px;
-  margin-bottom: 2px;
+  padding: 12px 16px;
+  margin-bottom: 4px;
   border-radius: var(--radius-lg);
   cursor: pointer;
   user-select: none;
   color: var(--text-muted);
-  font-size: 0.875rem;
+  font-size: 0.9375rem;
   font-weight: 500;
   transition: var(--transition);
   border-left: 3px solid transparent;
@@ -91,7 +94,8 @@
 .menuItem:hover {
   background: var(--accent-light);
   color: var(--text-primary);
-  border-left-color: rgba(99, 102, 241, 0.4);
+  border-left-color: rgba(14, 165, 233, 0.4);
+  transform: translateX(2px);
 }
 
 .active {
@@ -99,6 +103,7 @@
   color: var(--accent-text);
   border-left-color: var(--accent);
   font-weight: 600;
+  box-shadow: var(--shadow-glow);
 }
 
 .active .icon {
@@ -107,8 +112,8 @@
 }
 
 .icon {
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   flex-shrink: 0;
   color: inherit;
   opacity: 0.7;
@@ -122,11 +127,12 @@
 /* ── Footer ── */
 .footer {
   margin-top: auto;
-  padding: 16px 14px 18px;
+  padding: 18px 16px 20px;
   border-top: 1px solid var(--border-subtle);
   color: var(--text-muted);
-  font-size: 0.8125rem;
+  font-size: 0.875rem;
   line-height: 1.6;
+  background: linear-gradient(180deg, transparent 0%, rgba(14, 165, 233, 0.03) 100%);
 }
 
 .footer p {
@@ -135,18 +141,18 @@
 
 /* ── Gear button ── */
 .gearBtn {
-  background: none;
+  background: var(--bg-elevated);
   border: 1px solid var(--border-default);
   border-radius: var(--radius-md);
   color: var(--text-muted);
-  font-size: 0.8125rem;
+  font-size: 0.875rem;
   font-weight: 600;
-  padding: 8px 12px;
+  padding: 10px 14px;
   cursor: pointer;
   width: 100%;
   text-align: left;
-  transition: var(--transition-fast);
-  letter-spacing: 0.03em;
+  transition: var(--transition);
+  letter-spacing: 0.02em;
 }
 
 .gearBtn:hover {

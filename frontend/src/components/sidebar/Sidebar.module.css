@@ -19,6 +19,15 @@
 .logo {
   padding: 28px 24px 22px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.bellWrap {
+  position: absolute;
+  top: 20px;
+  right: 16px;
 }
 
 .logo h2 {

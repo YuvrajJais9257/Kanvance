@@ -199,6 +199,7 @@ exports.enrichRows = async (parsedRows) => {
       ...row,
       project_id,
       project_name,
+      subtask_id:   matchedSubtask?.id ?? null,
       task_name:    matchedSubtask?.group_name  ?? row.task_name,
       subtask_name: matchedSubtask?.subtask_name ?? row.subtask_name,
       hours_db,
@@ -212,7 +213,62 @@ exports.enrichRows = async (parsedRows) => {
   return enriched;
 };
 
-// ── 4. Export enriched rows to .xlsx ─────────────────────────────────────
+// ── 4. Sync enriched rows to activity_logs (deduplication) ───────────────
+// Inserts new entries into activity_logs if they don't already exist.
+// Deduplication key: user + date + project_id + subtask_id (or task name if no subtask)
+exports.syncToActivityLogs = async (enrichedRows) => {
+  const inserted = [];
+  const skipped  = [];
+
+  for (const row of enrichedRows) {
+    // Skip rows without required data
+    if (!row.employee || !row.logged_date || !row.project_id || !row.hours_final) {
+      skipped.push({ row: row.row_num, reason: "Missing required fields" });
+      continue;
+    }
+
+    // Find user_id by employee name (case-insensitive)
+    const [[user]] = await pool.execute(
+      `SELECT id FROM users WHERE LOWER(name) = LOWER(?) AND deleted_at IS NULL LIMIT 1`,
+      [row.employee]
+    );
+    const user_id = user?.id ?? null;
+
+    // Check if entry already exists (deduplication)
+    // Key: user + date + project + subtask (or null if no subtask match)
+    const [[existing]] = await pool.execute(
+      `SELECT id FROM activity_logs
+       WHERE employee = ?
+         AND logged_date = ?
+         AND project_id = ?
+         AND (subtask_id = ? OR (subtask_id IS NULL AND ? IS NULL))
+       LIMIT 1`,
+      [row.employee, row.logged_date, row.project_id, row.subtask_id ?? null, row.subtask_id ?? null]
+    );
+
+    if (existing) {
+      skipped.push({ row: row.row_num, reason: "Already exists in activity_logs" });
+      continue;
+    }
+
+    // Insert new entry
+    const logId = await ActivityLogModel.create({
+      subtask_id:  row.subtask_id ?? null,
+      project_id:  row.project_id,
+      user_id:     user_id,
+      employee:    row.employee,
+      logged_date: row.logged_date,
+      hours:       row.hours_final,
+      notes:       row.notes || `Imported from timesheet: ${row.task_name}${row.subtask_name ? " / " + row.subtask_name : ""}`,
+    });
+
+    inserted.push({ row: row.row_num, log_id: logId });
+  }
+
+  return { inserted, skipped };
+};
+
+// ── 5. Export enriched rows to .xlsx ─────────────────────────────────────
 exports.exportEnriched = async (enrichedRows, runId) => {
   const wb = new ExcelJS.Workbook();
   wb.creator = "CyberArk Practice Tracker";
@@ -356,3 +412,122 @@ function _matchSubtask(taskName, subtaskName, subtasks, projectId) {
   // Task-only match
   return inProject.find((s) => s.group_name.toLowerCase().includes(tLow)) ?? null;
 }
+
+// ── 6. Preview conflicts before saving to time_logs ──────────────────────
+/**
+ * Given enriched rows and the uploading user's session info, compute:
+ *   - validRows:     rows that can be saved (employee resolved, required fields present)
+ *   - rejectedRows:  rows rejected due to permission (MEMBER uploading for another user)
+ *   - newRows:       validRows with no existing time_logs entry
+ *   - conflictRows:  validRows that would overwrite an existing entry
+ *
+ * @param {Array}  enrichedRows  — output of enrichRows()
+ * @param {object} uploader      — { userId, userRole, userName }
+ * @returns {Promise<object>}
+ */
+exports.previewConflicts = async (enrichedRows, uploader) => {
+  const TimeLogModel = require("../models/timeLog.model");
+  const isMember = !["ADMIN", "MASTER_ADMIN", "MANAGER"].includes(uploader.userRole ?? "MEMBER");
+
+  const validRows    = [];
+  const rejectedRows = [];
+
+  for (const row of enrichedRows) {
+    // Resolve employee_id
+    const [[user]] = await pool.execute(
+      `SELECT id, name FROM users WHERE LOWER(name) = LOWER(?) AND deleted_at IS NULL LIMIT 1`,
+      [row.employee ?? ""]
+    );
+
+    if (!user) {
+      rejectedRows.push({ ...row, reject_reason: `Employee "${row.employee}" not found in system` });
+      continue;
+    }
+
+    // Permission check: MEMBERs can only upload for themselves
+    if (isMember && user.id !== uploader.userId) {
+      rejectedRows.push({
+        ...row,
+        reject_reason: `Permission denied — you can only upload rows for yourself (found "${row.employee}")`,
+      });
+      continue;
+    }
+
+    // Required fields check
+    if (!row.logged_date || !row.hours_final) {
+      rejectedRows.push({ ...row, reject_reason: "Missing date or hours" });
+      continue;
+    }
+
+    validRows.push({
+      ...row,
+      employee_id:    user.id,
+      activity_group: row.task_name ?? "",
+    });
+  }
+
+  // Find conflicts in one batch query
+  const conflictMap = await TimeLogModel.findConflicts(
+    validRows.map((r) => ({
+      employee_id:    r.employee_id,
+      project_name:   r.project_name ?? "",
+      activity_group: r.activity_group ?? "",
+      date:           r.logged_date,
+    }))
+  );
+
+  const newRows      = [];
+  const conflictRows = [];
+
+  for (const row of validRows) {
+    const key = `${row.employee_id}|${row.project_name ?? ""}|${row.activity_group ?? ""}|${row.logged_date}`;
+    const conflict = conflictMap.get(key);
+    if (conflict) {
+      conflictRows.push({ ...row, existing_hours: conflict.existing_hours, existing_source: conflict.existing_source });
+    } else {
+      newRows.push(row);
+    }
+  }
+
+  return {
+    total:         enrichedRows.length,
+    valid:         validRows.length,
+    new_count:     newRows.length,
+    conflict_count: conflictRows.length,
+    rejected_count: rejectedRows.length,
+    new_rows:      newRows,
+    conflict_rows: conflictRows,
+    rejected_rows: rejectedRows,
+  };
+};
+
+// ── 7. Commit enriched rows to time_logs (after user confirms) ────────────
+/**
+ * Upserts all valid rows (new + conflicts) into time_logs.
+ * Rejected rows are never written.
+ *
+ * @param {object} preview  — output of previewConflicts()
+ * @returns {Promise<{inserted, updated, rejected}>}
+ */
+exports.commitToTimeLogs = async (preview) => {
+  const TimeLogModel = require("../models/timeLog.model");
+
+  const rowsToSave = [
+    ...preview.new_rows,
+    ...preview.conflict_rows,
+  ].map((r) => ({
+    employee_id:    r.employee_id,
+    project_name:   r.project_name ?? "",
+    activity_group: r.activity_group ?? "",
+    date:           r.logged_date,
+    hours:          r.hours_final,
+  }));
+
+  const { inserted, updated } = await TimeLogModel.upsertExcelBatch(rowsToSave);
+
+  return {
+    inserted,
+    updated,
+    rejected: preview.rejected_count,
+  };
+};

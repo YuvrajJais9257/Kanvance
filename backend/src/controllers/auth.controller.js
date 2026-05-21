@@ -1,4 +1,5 @@
 const bcrypt             = require("bcrypt");
+const pool               = require("../config/db");
 const AuthModel          = require("../models/auth.model");
 const UserModel          = require("../models/user.model");
 const AvailabilityModel  = require("../models/availability.model");
@@ -70,6 +71,17 @@ exports.login = async (req, res, next) => {
     req.session.userId   = user.id;
     req.session.userName = user.name;
     req.session.userRole = user.role;
+
+    // Get user's group privilege level
+    let privilegeLevel = "MEMBER"; // default
+    if (user.group_id) {
+      const [[group]] = await pool.execute(
+        "SELECT privilege_level FROM user_groups WHERE id = ?",
+        [user.group_id]
+      );
+      if (group) privilegeLevel = group.privilege_level;
+    }
+    req.session.privilegeLevel = privilegeLevel;
 
     // Fire-and-forget side effects — never block the login response
     UserModel.touchLastLogin(user.id).catch(console.error);

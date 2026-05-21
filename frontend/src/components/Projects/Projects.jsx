@@ -9,9 +9,11 @@ import {
   getCustomers, getTeam,
   getEntityDocs, getPickerDocs, linkDocument, unlinkDocument, uploadDocument,
   getEntityInfra, getPickerInfra, linkInfra, unlinkInfra,
+  hardDeleteProject,
 } from "../../api";
 import { useError } from "../../context/ErrorContext";
 import { useAuth } from "../../context/AuthContext";
+import DeleteConfirmModal from "../shared/DeleteConfirmModal";
 
 // ── Constants ────────────────────────────────────────────────
 const typeTabs = ["All", "Implementation", "Managed Service", "License Renewal", "New Opportunity"];
@@ -357,6 +359,9 @@ const Projects = () => {
   const [editForm, setEditForm]         = useState({});
   const [editSaving, setEditSaving]     = useState(false);
 
+  // ── Hard delete project state (admin-only) ─────────────────
+  const [deleteModal, setDeleteModal]   = useState(null); // project object to delete
+
   // ── Document attachment state ──────────────────────────────
   const [attachPanel, setAttachPanel]   = useState(null);  // subtaskId currently open
   const [attachData, setAttachData]     = useState({});    // { subtaskId: { docs, infra, loading } }
@@ -637,9 +642,16 @@ const Projects = () => {
     finally { setEditSaving(false); }
   };
 
+  // ── Hard delete project (admin-only) ──────────────────────
+  const handleHardDeleteProject = async () => {
+    await hardDeleteProject(deleteModal.id);
+    setDeleteModal(null);
+    setExpandedProjectId(null);
+    await loadList();
+  };
+
   // ── View customer profile ──────────────────────────────────
-  const viewCustomerProfile = (customerId) => {
-    // Navigate to /customers with the customer id in state so the drawer opens
+  const viewCustomerProfile = (customerId) => {    // Navigate to /customers with the customer id in state so the drawer opens
     navigate("/customers", { state: { openCustomerId: customerId } });
   };
 
@@ -875,6 +887,15 @@ const Projects = () => {
                           <button className={styles.secondaryBtn} onClick={() => viewCustomerProfile(project.customer_id)}>
                             View customer profile
                           </button>
+                          {user?.role === "ADMIN" && (
+                            <button
+                              className={styles.dangerBtn}
+                              onClick={() => setDeleteModal(project)}
+                              title="Permanently delete this project"
+                            >
+                              Delete project
+                            </button>
+                          )}
                         </div>
                       </div>
 
@@ -1250,6 +1271,17 @@ const Projects = () => {
             onSave={handleFlagSave}
             onClear={handleFlagClear}
             onClose={() => setFlagModal(null)}
+          />
+        )}
+
+        {/* ── Hard Delete Project Modal (admin-only) ─────────── */}
+        {deleteModal && (
+          <DeleteConfirmModal
+            entityType="project"
+            entityName={deleteModal.customer_name || deleteModal.name}
+            description={`This will permanently delete the project "${deleteModal.customer_name || deleteModal.name}", all its phases, tasks, subtasks, assignments, and time logs. This cannot be undone.`}
+            onConfirm={handleHardDeleteProject}
+            onClose={() => setDeleteModal(null)}
           />
         )}
 

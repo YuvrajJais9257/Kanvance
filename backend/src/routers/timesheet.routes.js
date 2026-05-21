@@ -24,6 +24,7 @@ const upload = multer({
 router.get("/template",          ctrl.downloadTemplate);
 router.post("/upload",           upload.single("file"), ctrl.upload);
 router.post("/enrich",           ctrl.enrich);
+router.post("/sync",             ctrl.sync);
 router.post("/export",           ctrl.exportExcel);
 router.get("/runs",              ctrl.listRuns);
 router.get("/runs/:id/rows",     ctrl.getRunRows);

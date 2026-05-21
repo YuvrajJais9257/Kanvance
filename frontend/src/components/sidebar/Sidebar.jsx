@@ -6,6 +6,7 @@ import { useAuth } from "../../context/AuthContext";
 import { useAvailability } from "../../hooks/useAvailability";
 import StatusDot from "../StatusDot/StatusDot";
 import StatusPicker from "../StatusDot/StatusPicker";
+import NotificationBell from "../Notifications/NotificationBell";
 // Note: user creation is handled exclusively in User Management (/users)
 
 const Sidebar = () => {
@@ -64,6 +65,9 @@ const Sidebar = () => {
         <div className={styles.logo}>
           <h2>CYBERARK</h2>
           <span>Practice Tracker v1.0</span>
+          <div className={styles.bellWrap}>
+            <NotificationBell />
+          </div>
         </div>
 
         <div className={styles.section}>

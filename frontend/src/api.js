@@ -181,6 +181,9 @@ export const exportTimesheet      = (rows, filename) => {
     URL.revokeObjectURL(url);
   });
 };
+export const saveTimesheetHours    = (rows)         => USE_API ? post("/api/reports/save-hours", { rows }) : Promise.resolve({ inserted: 0, skipped: 0 });
+export const previewTimeLogs       = (rows)         => USE_API ? post("/api/reports/preview-time-logs", { rows }) : Promise.resolve({ total: 0, new_count: 0, conflict_count: 0, rejected_count: 0, new_rows: [], conflict_rows: [], rejected_rows: [] });
+export const commitTimeLogs        = (preview)      => USE_API ? post("/api/reports/commit-time-logs", { preview }) : Promise.resolve({ inserted: 0, updated: 0, rejected: 0 });
 export const getTimesheetRuns     = ()             => USE_API ? get("/api/timesheet/runs")                        : Promise.resolve([]);
 export const getTimesheetRunRows  = (id)           => USE_API ? get(`/api/timesheet/runs/${id}/rows`)             : Promise.resolve([]);
 
@@ -193,3 +196,18 @@ export const getBlockedTasks           = ()        => USE_API ? get("/api/analyt
 export const getProgressTrend          = ()        => USE_API ? get("/api/analytics/progress-trend")   : Promise.resolve([]);
 export const getStatusBreakdown        = ()        => USE_API ? get("/api/analytics/status-breakdown") : Promise.resolve([]);
 export const getHoursPerDay            = (days)    => USE_API ? get(`/api/analytics/hours-per-day${days ? "?days=" + days : ""}`) : Promise.resolve([]);
+
+// ── Hard Delete (admin-only) ──────────────────────────────────
+export const hardDeleteProject  = (id) => USE_API ? del(`/api/admin/projects/${id}`)  : Promise.resolve();
+export const hardDeleteCustomer = (id) => USE_API ? del(`/api/admin/customers/${id}`) : Promise.resolve();
+export const getAuditTrail      = ()   => USE_API ? get("/api/admin/audit-trail")      : Promise.resolve([]);
+
+// ── Notifications ─────────────────────────────────────────────
+export const getNotifications = (filter) => {
+  const qs = filter ? `?filter=${filter}` : "";
+  return USE_API ? get(`/api/notifications${qs}`) : Promise.resolve({ notifications: [], unread_count: 0 });
+};
+export const getUnreadNotifCount       = ()   => USE_API ? get("/api/notifications/unread-count") : Promise.resolve({ count: 0 });
+export const getCriticalNotifications  = ()   => USE_API ? get("/api/notifications/critical")     : Promise.resolve([]);
+export const markNotificationRead      = (id) => USE_API ? request("PATCH", `/api/notifications/${id}/read`) : Promise.resolve();
+export const markAllNotificationsRead  = ()   => USE_API ? request("PATCH", "/api/notifications/read-all")   : Promise.resolve();

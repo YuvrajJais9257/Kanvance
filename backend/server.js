@@ -217,9 +217,13 @@ app.use("/api/documents",  require("./src/routers/document.routes"));
 app.use("/api/infra",      require("./src/routers/infra.routes"));
 app.use("/api/dashboard",  require("./src/routers/dashboard.routes"));
 app.use("/api/my-tasks",     require("./src/routers/myTasks.routes"));
-app.use("/api/availability", require("./src/routers/availability.routes"));
-app.use("/api/timesheet",    require("./src/routers/timesheet.routes"));
-app.use("/api/analytics",    require("./src/routers/analytics.routes"));
+app.use("/api/availability",    require("./src/routers/availability.routes"));
+app.use("/api/timesheet",       require("./src/routers/timesheet.routes"));
+app.use("/api/analytics",       require("./src/routers/analytics.routes"));
+app.use("/api/activity-logs",   require("./src/routers/activityLog.routes"));
+app.use("/api/reports",         require("./src/routers/reports.routes"));
+app.use("/api/notifications",   require("./src/routers/notifications.routes"));
+app.use("/api/admin",           require("./src/routers/delete.routes"));
 
 /* ── Dev-only seed endpoint ──────────────────────────────────── */
 if (!isProd) {
@@ -243,4 +247,25 @@ app.use(errorMiddleware);
 
 /* ── Start ───────────────────────────────────────────────────── */
 const PORT = process.env.PORT || 4000;
-app.listen(PORT, () => console.log(`🚀  Server on port ${PORT}`));
+app.listen(PORT, () => {
+  console.log(`🚀  Server on port ${PORT}`);
+
+  // ── Deadline notification cron job ────────────────────────
+  // Runs every day at 09:00 AM server time
+  const cron = require("node-cron");
+  const { generateDailyNotifications } = require("./src/services/deadlineNotification.service");
+
+  cron.schedule("0 9 * * *", async () => {
+    console.log("⏰  Running daily deadline notification job...");
+    try {
+      const result = await generateDailyNotifications();
+      console.log(`✅  Deadline notifications: ${result.notificationsCreated} created, ${result.notificationsSkipped} skipped`);
+    } catch (err) {
+      console.error("❌  Deadline notification job failed:", err.message);
+    }
+  }, {
+    timezone: "Asia/Kolkata" // IST — adjust to your server timezone
+  });
+
+  console.log("⏰  Deadline notification cron scheduled (daily 09:00 AM IST)");
+});

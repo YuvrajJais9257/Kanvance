@@ -66,7 +66,7 @@ exports.getById = async (id) => {
 // ── Get by email (for auth — includes password_hash) ─────────
 exports.findByEmail = async (email) => {
   const [[row]] = await pool.execute(
-    "SELECT id, name, username, email, password_hash, role, status FROM users WHERE email = ? AND deleted_at IS NULL",
+    "SELECT id, name, username, email, password_hash, role, status, group_id FROM users WHERE email = ? AND deleted_at IS NULL",
     [email]
   );
   return row ?? null;
@@ -75,7 +75,7 @@ exports.findByEmail = async (email) => {
 // ── Get by username (for username-based login) ────────────────
 exports.findByUsername = async (username) => {
   const [[row]] = await pool.execute(
-    "SELECT id, name, username, email, password_hash, role, status FROM users WHERE username = ? AND deleted_at IS NULL",
+    "SELECT id, name, username, email, password_hash, role, status, group_id FROM users WHERE username = ? AND deleted_at IS NULL",
     [username]
   );
   return row ?? null;

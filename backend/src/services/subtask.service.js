@@ -1,6 +1,7 @@
 const pool = require("../config/db");
 const SubtaskModel = require("../models/subtask.model");
 const ProjectModel = require("../models/project.model");
+const TimeLogModel = require("../models/timeLog.model");
 
 exports.create = (groupId, { name, position }) => {
   if (!name || !name.trim()) throw Object.assign(new Error("name is required"), { status: 400 });
@@ -32,6 +33,37 @@ exports.update = async (id, data) => {
   // Auto-derive project status whenever a subtask status changes
   if ("status" in cleanData) {
     await ProjectModel.recalcStatus(existing.project_id);
+  }
+
+  // ── Auto-log hours when subtask is marked Done ────────────────────────
+  // Only fires when transitioning TO "Done" (not if it was already Done).
+  if (cleanData.status === "Done" && existing.status !== "Done") {
+    try {
+      // Resolve the assignee: use the updated assignee_id if provided, else the existing one
+      const assigneeId = cleanData.assignee_id ?? existing.assignee_id;
+      if (assigneeId) {
+        // Fetch project + activity_group names for the natural key
+        const [[ctx]] = await pool.execute(
+          `SELECT p.name AS project_name, ag.name AS activity_group
+           FROM activity_groups ag
+           JOIN projects p ON p.id = ag.project_id
+           WHERE ag.id = ?`,
+          [existing.group_id]
+        );
+        if (ctx) {
+          await TimeLogModel.insertAppLog({
+            employee_id:    assigneeId,
+            project_name:   ctx.project_name,
+            activity_group: ctx.activity_group,
+            date:           new Date().toISOString().split("T")[0],
+            hours:          1, // default 1h per subtask completion
+          });
+        }
+      }
+    } catch (logErr) {
+      // Non-fatal — log the error but don't fail the subtask update
+      console.error("[time_logs] Failed to auto-log hours for subtask", id, logErr.message);
+    }
   }
 };
 

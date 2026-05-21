@@ -72,23 +72,59 @@ exports.summary = async () => {
 };
 
 // ── 3. Team utilisation — hours per user ─────────────────────────────────
+// Reads total hours from time_logs (covers both app-logged and Excel-uploaded hours).
+//
+// IMPORTANT: time_logs and subtasks are aggregated in separate subqueries before
+// joining to users. This prevents the classic JOIN-multiplication bug where
+// N time_log rows × M subtask rows causes SUM(hours) to be inflated by M.
 exports.teamUtilisation = async () => {
   const [rows] = await pool.execute(
     `SELECT
        u.id                                              AS user_id,
        u.name                                            AS user_name,
        u.role,
-       ROUND(COALESCE(SUM(al.hours), 0), 1)             AS total_hours,
-       COUNT(DISTINCT al.project_id)                     AS projects_worked,
-       COUNT(DISTINCT al.logged_date)                    AS days_logged,
-       COUNT(DISTINCT s.id)                              AS assigned_subtasks,
-       SUM(s.status = 'Done')                            AS completed_subtasks,
-       SUM(s.status = 'Blocked')                         AS blocked_subtasks
+       ROUND(COALESCE(tl_agg.total_hours, 0), 1)        AS total_hours,
+       COALESCE(tl_agg.projects_worked, 0)               AS projects_worked,
+       COALESCE(tl_agg.days_logged, 0)                   AS days_logged,
+       COALESCE(s_agg.assigned_subtasks, 0)              AS assigned_subtasks,
+       COALESCE(s_agg.completed_subtasks, 0)             AS completed_subtasks,
+       COALESCE(s_agg.blocked_subtasks, 0)               AS blocked_subtasks,
+       COALESCE(s_agg.projects_count, 0)                 AS projects_count
      FROM users u
-     LEFT JOIN activity_logs al ON al.user_id = u.id
-     LEFT JOIN subtasks s       ON s.assignee_id = u.id
+
+     -- Aggregate time_logs independently (no subtask join here)
+     LEFT JOIN (
+       SELECT
+         employee_id,
+         ROUND(SUM(hours), 1)              AS total_hours,
+         COUNT(DISTINCT project_name)      AS projects_worked,
+         COUNT(DISTINCT date)              AS days_logged
+       FROM time_logs
+       GROUP BY employee_id
+     ) tl_agg ON tl_agg.employee_id = u.id
+
+     -- Aggregate subtasks independently (no time_logs join here)
+     LEFT JOIN (
+       SELECT
+         u2.id                                                         AS user_id,
+         COUNT(DISTINCT s.id)                                          AS assigned_subtasks,
+         SUM(s.status = 'Done')                                        AS completed_subtasks,
+         SUM(s.status = 'Blocked')                                     AS blocked_subtasks,
+         COUNT(DISTINCT ag.project_id)                                 AS projects_count
+       FROM users u2
+       JOIN subtasks s ON s.assignee_id = u2.id OR (
+         s.assignee_id IS NULL AND EXISTS (
+           SELECT 1 FROM activity_groups ag2
+           JOIN projects p2 ON p2.id = ag2.project_id
+           WHERE ag2.id = s.group_id AND p2.owner_id = u2.id
+         )
+       )
+       JOIN activity_groups ag ON ag.id = s.group_id
+       WHERE u2.deleted_at IS NULL AND u2.status = 'active'
+       GROUP BY u2.id
+     ) s_agg ON s_agg.user_id = u.id
+
      WHERE u.deleted_at IS NULL AND u.status = 'active'
-     GROUP BY u.id
      ORDER BY total_hours DESC`
   );
   return rows;

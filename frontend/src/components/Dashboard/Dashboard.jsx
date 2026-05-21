@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import styles from "./Dashboard.module.css";
 import Sidebar from "../sidebar/Sidebar";
+import DeadlineBanner from "../Notifications/DeadlineBanner";
 import { getDashboard, getProjects, createProject, getCustomers, getTeam } from "../../api";
 import { useError } from "../../context/ErrorContext";
 import { useAvailability } from "../../hooks/useAvailability";
@@ -111,6 +112,9 @@ export default function Dashboard() {
           <div className={styles.loading}>Loading…</div>
         ) : (
           <>
+            {/* Critical deadline banner — overdue/today only, dismissible per session */}
+            <DeadlineBanner />
+
             {/* Stat Cards */}
             <div className={styles.statsRow}>
               {statCards.map((card) => (

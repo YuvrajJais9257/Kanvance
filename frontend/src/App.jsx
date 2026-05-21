@@ -8,6 +8,7 @@ import AccessManagement  from './components/AccessManagement/AccessManagement';
 import Reports           from './components/Reports/Reports';
 import Analytics         from './components/Analytics/Analytics';
 import Login             from './components/Login/Login';
+import NotificationsPage from './components/Notifications/NotificationsPage';
 import ProtectedRoute    from './components/ProtectedRoute';
 import { ErrorProvider } from './context/ErrorContext';
 import { AuthProvider }  from './context/AuthContext';
@@ -45,6 +46,9 @@ function App() {
             } />
             <Route path="/analytics" element={
               <ProtectedRoute><Analytics /></ProtectedRoute>
+            } />
+            <Route path="/notifications" element={
+              <ProtectedRoute><NotificationsPage /></ProtectedRoute>
             } />
 
             {/* Fallback */}

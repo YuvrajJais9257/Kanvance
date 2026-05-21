@@ -38,6 +38,19 @@ exports.enrich = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
+// POST /api/timesheet/sync  body: { rows: [...] }
+// Syncs enriched rows to activity_logs (deduplication)
+exports.sync = async (req, res, next) => {
+  try {
+    const { rows } = req.body;
+    if (!Array.isArray(rows) || !rows.length) {
+      return res.status(400).json({ error: "rows array is required" });
+    }
+    const result = await TimesheetService.syncToActivityLogs(rows);
+    res.json(result);
+  } catch (err) { next(err); }
+};
+
 // POST /api/timesheet/export  body: { rows: [...], filename?: "..." }
 exports.exportExcel = async (req, res, next) => {
   try {

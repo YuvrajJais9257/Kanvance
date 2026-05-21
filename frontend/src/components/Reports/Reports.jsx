@@ -1,8 +1,14 @@
 /**
  * Reports.jsx — Timesheet Excel Pipeline
- * 4-step workflow: Download template → Upload → Enrich preview → Export
+ * 4-step workflow: Download template → Upload → Preview & Enrich → Export / Save to DB
+ *
+ * Step 3 now shows a conflict preview before any DB write:
+ *   - New entries (green)
+ *   - Conflicting entries that will overwrite existing (amber, shows existing source)
+ *   - Rejected rows (red, permission or missing employee)
+ * User must click "Confirm & Save" to commit. Download Excel is always available.
  */
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import Sidebar from "../sidebar/Sidebar";
 import styles from "./Reports.module.css";
 import {
@@ -11,9 +17,10 @@ import {
   enrichTimesheet,
   exportTimesheet,
   getTimesheetRuns,
+  previewTimeLogs,
+  commitTimeLogs,
 } from "../../api";
 import { useError } from "../../context/ErrorContext";
-import { useEffect } from "react";
 
 const STEPS = ["Download Template", "Upload & Parse", "Preview & Enrich", "Export"];
 
@@ -31,16 +38,24 @@ export default function Reports() {
   const { showError } = useError();
   const fileRef = useRef(null);
 
-  const [step,        setStep]        = useState(0);
-  const [parsedRows,  setParsedRows]  = useState([]);
-  const [enrichedRows,setEnrichedRows]= useState([]);
-  const [uploading,   setUploading]   = useState(false);
-  const [enriching,   setEnriching]   = useState(false);
-  const [exporting,   setExporting]   = useState(false);
-  const [uploadedFile,setUploadedFile]= useState(null);
-  const [runs,        setRuns]        = useState([]);
-  const [runsLoading, setRunsLoading] = useState(false);
-  const [activeTab,   setActiveTab]   = useState("workflow"); // "workflow" | "history"
+  const [step,          setStep]          = useState(0);
+  const [parsedRows,    setParsedRows]     = useState([]);
+  const [enrichedRows,  setEnrichedRows]   = useState([]);
+  const [uploading,     setUploading]      = useState(false);
+  const [enriching,     setEnriching]      = useState(false);
+  const [exporting,     setExporting]      = useState(false);
+  const [uploadedFile,  setUploadedFile]   = useState(null);
+  const [runs,          setRuns]           = useState([]);
+  const [runsLoading,   setRunsLoading]    = useState(false);
+  const [activeTab,     setActiveTab]      = useState("workflow"); // "workflow" | "history"
+
+  // Conflict preview state
+  const [previewing,    setPreviewing]     = useState(false);
+  const [previewData,   setPreviewData]    = useState(null); // result of previewTimeLogs()
+  const [committing,    setCommitting]     = useState(false);
+
+  // Post-import summary modal
+  const [importResult,  setImportResult]   = useState(null); // { inserted, updated, rejected, message }
 
   // Load upload history
   const loadRuns = async () => {
@@ -73,6 +88,7 @@ export default function Reports() {
       const result = await uploadTimesheetFile(fd);
       setParsedRows(result.rows);
       setEnrichedRows([]);
+      setPreviewData(null);
       setStep(2);
     } catch (err) {
       showError(err.message);
@@ -88,7 +104,7 @@ export default function Reports() {
     try {
       const result = await enrichTimesheet(parsedRows);
       setEnrichedRows(result.rows);
-      setStep(3);
+      setPreviewData(null); // reset preview when rows change
     } catch (err) {
       showError(err.message);
     } finally {
@@ -96,7 +112,35 @@ export default function Reports() {
     }
   };
 
-  // ── Step 4: Export ─────────────────────────────────────────────────────
+  // ── Step 3: Preview conflicts before saving to DB ─────────────────────
+  const handlePreviewConflicts = async () => {
+    setPreviewing(true);
+    try {
+      const result = await previewTimeLogs(enrichedRows);
+      setPreviewData(result);
+    } catch (err) {
+      showError(err.message);
+    } finally {
+      setPreviewing(false);
+    }
+  };
+
+  // ── Step 3: Confirm & Save to DB ──────────────────────────────────────
+  const handleConfirmSave = async () => {
+    if (!previewData) return;
+    setCommitting(true);
+    try {
+      const result = await commitTimeLogs(previewData);
+      setImportResult(result);
+      setPreviewData(null); // clear preview after commit
+    } catch (err) {
+      showError(err.message);
+    } finally {
+      setCommitting(false);
+    }
+  };
+
+  // ── Step 4: Export Excel ───────────────────────────────────────────────
   const handleExport = async () => {
     setExporting(true);
     try {
@@ -109,7 +153,20 @@ export default function Reports() {
     }
   };
 
+  const handleReset = () => {
+    setStep(0);
+    setParsedRows([]);
+    setEnrichedRows([]);
+    setUploadedFile(null);
+    setPreviewData(null);
+    setImportResult(null);
+  };
+
   const rowsToShow = enrichedRows.length ? enrichedRows : parsedRows;
+
+  // Build a set of row_nums that are conflicts / rejected for table highlighting
+  const conflictRowNums = new Set(previewData?.conflict_rows?.map((r) => r.row_num) ?? []);
+  const rejectedRowNums = new Set(previewData?.rejected_rows?.map((r) => r.row_num) ?? []);
 
   return (
     <div>
@@ -185,10 +242,7 @@ export default function Reports() {
                   onDrop={(e) => {
                     e.preventDefault();
                     const file = e.dataTransfer.files?.[0];
-                    if (file) {
-                      const fakeEvent = { target: { files: [file] } };
-                      handleFileChange(fakeEvent);
-                    }
+                    if (file) handleFileChange({ target: { files: [file] } });
                   }}
                 >
                   {uploading ? (
@@ -226,6 +280,36 @@ export default function Reports() {
                     : `${parsedRows.length} rows parsed. Click Enrich to cross-reference with the database.`}
                 </p>
 
+                {/* Conflict preview summary badges */}
+                {previewData && (
+                  <div className={styles.previewSummary}>
+                    <div className={`${styles.previewBadge} ${styles.badgeTotal}`}>
+                      <strong>{previewData.total}</strong> total rows
+                    </div>
+                    <div className={`${styles.previewBadge} ${styles.badgeNew}`}>
+                      <strong>{previewData.new_count}</strong> new entries
+                    </div>
+                    <div className={`${styles.previewBadge} ${styles.badgeConflict}`}>
+                      <strong>{previewData.conflict_count}</strong> will overwrite existing
+                    </div>
+                    <div className={`${styles.previewBadge} ${styles.badgeRejected}`}>
+                      <strong>{previewData.rejected_count}</strong> rejected
+                    </div>
+                  </div>
+                )}
+
+                {previewData?.conflict_count > 0 && (
+                  <div className={styles.conflictNote}>
+                    ⚠ {previewData.conflict_count} row{previewData.conflict_count !== 1 ? "s" : ""} will overwrite existing entries (highlighted in amber below). Existing hours and source are shown.
+                  </div>
+                )}
+
+                {previewData?.rejected_count > 0 && (
+                  <div className={styles.rejectNote}>
+                    ✕ {previewData.rejected_count} row{previewData.rejected_count !== 1 ? "s" : ""} rejected (highlighted in red). These will not be saved. See the "Reason" column for details.
+                  </div>
+                )}
+
                 {rowsToShow.length > 0 && (
                   <div className={styles.tableWrap}>
                     <table className={styles.table}>
@@ -239,17 +323,34 @@ export default function Reports() {
                           <th>Hours</th>
                           <th>Status</th>
                           <th>Matched</th>
+                          {previewData && <th>DB Status</th>}
+                          {previewData && <th>Reason</th>}
                         </tr>
                       </thead>
                       <tbody>
                         {rowsToShow.map((r, i) => {
                           const sc = STATUS_COLORS[r.status_final || r.status_uploaded] ?? "#6b7280";
+                          const isConflict = previewData && conflictRowNums.has(r.row_num ?? i + 1);
+                          const isRejected = previewData && rejectedRowNums.has(r.row_num ?? i + 1);
+
+                          // Find conflict/rejected detail
+                          const conflictDetail = isConflict
+                            ? previewData.conflict_rows.find((cr) => cr.row_num === (r.row_num ?? i + 1))
+                            : null;
+                          const rejectedDetail = isRejected
+                            ? previewData.rejected_rows.find((rr) => rr.row_num === (r.row_num ?? i + 1))
+                            : null;
+
+                          let rowClass = r.matched ? styles.rowMatched : "";
+                          if (isConflict) rowClass = styles.rowConflict;
+                          if (isRejected) rowClass = styles.rowRejected;
+
                           return (
-                            <tr key={i} className={r.matched ? styles.rowMatched : ""}>
+                            <tr key={i} className={rowClass}>
                               <td className={styles.rowNum}>{r.row_num ?? i + 1}</td>
                               <td>{r.logged_date ?? "—"}</td>
                               <td>{r.employee ?? "—"}</td>
-                              <td>{r.project_name ?? r.project_name ?? "—"}</td>
+                              <td>{r.project_name ?? "—"}</td>
                               <td>{r.task_name ?? "—"}</td>
                               <td className={styles.hours}>
                                 {r.hours_final ?? r.hours_uploaded ?? "—"}
@@ -269,6 +370,24 @@ export default function Reports() {
                                   </span>
                                 ) : "—"}
                               </td>
+                              {previewData && (
+                                <td>
+                                  {isConflict ? (
+                                    <span className={`${styles.conflictTag} ${styles.conflictTagOverwrite}`}>
+                                      overwrites {conflictDetail?.existing_source ?? "?"} ({conflictDetail?.existing_hours ?? "?"}h)
+                                    </span>
+                                  ) : isRejected ? (
+                                    <span className={`${styles.conflictTag} ${styles.conflictTagRejected}`}>rejected</span>
+                                  ) : (
+                                    <span className={`${styles.conflictTag} ${styles.conflictTagNew}`}>new</span>
+                                  )}
+                                </td>
+                              )}
+                              {previewData && (
+                                <td style={{ color: "#ef4444", fontSize: "12px", maxWidth: "200px", whiteSpace: "normal" }}>
+                                  {rejectedDetail?.reject_reason ?? ""}
+                                </td>
+                              )}
                             </tr>
                           );
                         })}
@@ -279,6 +398,7 @@ export default function Reports() {
 
                 <div className={styles.panelActions}>
                   <button className={styles.ghostBtn} onClick={() => setStep(1)}>← Re-upload</button>
+
                   {!enrichedRows.length ? (
                     <button
                       className={styles.primaryBtn}
@@ -288,9 +408,47 @@ export default function Reports() {
                       {enriching ? "Enriching…" : "Enrich from Database →"}
                     </button>
                   ) : (
-                    <button className={styles.primaryBtn} onClick={() => setStep(3)}>
-                      Proceed to Export →
-                    </button>
+                    <>
+                      {/* Always available: proceed to Excel export */}
+                      <button className={styles.secondaryBtn} onClick={() => setStep(3)}>
+                        Proceed to Export →
+                      </button>
+
+                      {/* Preview conflicts before saving to DB */}
+                      {!previewData && (
+                        <button
+                          className={styles.primaryBtn}
+                          onClick={handlePreviewConflicts}
+                          disabled={previewing}
+                        >
+                          {previewing ? "Checking…" : "Preview DB Save →"}
+                        </button>
+                      )}
+
+                      {/* Confirm & Save — only shown after preview */}
+                      {previewData && (
+                        <button
+                          className={styles.primaryBtn}
+                          onClick={handleConfirmSave}
+                          disabled={committing || previewData.valid === 0}
+                          title={previewData.valid === 0 ? "No valid rows to save" : undefined}
+                        >
+                          {committing
+                            ? "Saving…"
+                            : `Confirm & Save ${previewData.valid} row${previewData.valid !== 1 ? "s" : ""} to DB`}
+                        </button>
+                      )}
+
+                      {/* Re-run preview if user wants to refresh */}
+                      {previewData && (
+                        <button
+                          className={styles.ghostBtn}
+                          onClick={() => setPreviewData(null)}
+                        >
+                          ↺ Re-check
+                        </button>
+                      )}
+                    </>
                   )}
                 </div>
               </div>
@@ -342,7 +500,7 @@ export default function Reports() {
                   </button>
                   <button
                     className={styles.secondaryBtn}
-                    onClick={() => { setStep(0); setParsedRows([]); setEnrichedRows([]); setUploadedFile(null); }}
+                    onClick={handleReset}
                   >
                     Start New Upload
                   </button>
@@ -397,6 +555,39 @@ export default function Reports() {
           </div>
         )}
       </div>
+
+      {/* ── Post-import summary modal ──────────────────────────────────── */}
+      {importResult && (
+        <div className={styles.summaryOverlay} onClick={() => setImportResult(null)}>
+          <div className={styles.summaryModal} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.summaryIcon}>✅</div>
+            <h2 className={styles.summaryTitle}>Import Complete</h2>
+            <p className={styles.summaryMsg}>{importResult.message}</p>
+            <div className={styles.summaryStats}>
+              <div className={styles.summaryStatCard}>
+                <span className={`${styles.summaryStatNum} ${styles.numNew}`}>{importResult.inserted}</span>
+                <span className={styles.summaryStatLabel}>New</span>
+              </div>
+              <div className={styles.summaryStatCard}>
+                <span className={`${styles.summaryStatNum} ${styles.numOverwrite}`}>{importResult.updated}</span>
+                <span className={styles.summaryStatLabel}>Overwritten</span>
+              </div>
+              <div className={styles.summaryStatCard}>
+                <span className={`${styles.summaryStatNum} ${styles.numRejected}`}>{importResult.rejected}</span>
+                <span className={styles.summaryStatLabel}>Rejected</span>
+              </div>
+            </div>
+            <div style={{ display: "flex", gap: "12px", justifyContent: "center" }}>
+              <button className={styles.primaryBtn} onClick={() => setImportResult(null)}>
+                Done
+              </button>
+              <button className={styles.ghostBtn} onClick={handleReset}>
+                Start New Upload
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

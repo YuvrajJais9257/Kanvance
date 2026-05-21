@@ -7,8 +7,11 @@ import {
   getContacts, createContact, deleteContact,
   getDocuments, createDocument, deleteDocument, uploadDocument,
   getInfra, createInfra, deleteInfra,
+  hardDeleteCustomer,
 } from "../../api";
 import { useError } from "../../context/ErrorContext";
+import { useAuth } from "../../context/AuthContext";
+import DeleteConfirmModal from "../shared/DeleteConfirmModal";
 
 const STATUS_COLORS = {
   "On Track":  { bg: "rgba(52,168,83,0.18)",  color: "#58d47a" },
@@ -28,13 +31,14 @@ const blankCustomer = {
 export default function Customers() {
   const { showError } = useError();
   const location = useLocation();
+  const { user } = useAuth();
 
   // ── List state ──────────────────────────────────────────
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading]     = useState(true);
 
   // ── Drawer state ────────────────────────────────────────
-  const [selected, setSelected]   = useState(null);   // full customer object
+  const [selected, setSelected]   = useState(null);
   const [activeTab, setActiveTab] = useState("Profile");
   const [contacts, setContacts]   = useState([]);
   const [documents, setDocuments] = useState([]);
@@ -45,6 +49,9 @@ export default function Customers() {
   const [showModal, setShowModal] = useState(false);
   const [form, setForm]           = useState(blankCustomer);
   const [saving, setSaving]       = useState(false);
+
+  // ── Hard delete customer state (admin-only) ──────────────
+  const [deleteModal, setDeleteModal] = useState(null); // customer object to delete
 
   // ── Inline add rows ──────────────────────────────────────
   const [newContact,  setNewContact]  = useState({ name: "", role: "", email: "", phone: "" });
@@ -108,6 +115,13 @@ export default function Customers() {
 
   const closeDrawer = () => { setSelected(null); setEditingProfile(false); };
 
+  // ── Hard delete customer (admin-only) ────────────────────
+  const handleHardDeleteCustomer = async () => {
+    await hardDeleteCustomer(deleteModal.id);
+    setDeleteModal(null);
+    closeDrawer();
+    await loadList();
+  };
   // ── F-7: Edit customer profile ───────────────────────────
   const [editingProfile, setEditingProfile] = useState(false);
   const [profileForm,    setProfileForm]    = useState({});
@@ -241,7 +255,8 @@ export default function Customers() {
   const f = (val) => val || <span className={styles.empty}>—</span>;
 
   return (
-    <div>
+    <>
+      <div>
       <Sidebar />
       <div className={styles.page}>
 
@@ -324,6 +339,17 @@ export default function Customers() {
                 </div>
                 <button className={styles.closeBtn} onClick={closeDrawer}>✕</button>
               </div>
+              {/* Admin-only: delete customer button — fully hidden from non-admins */}
+              {selected && user?.role === "ADMIN" && (
+                <div className={styles.drawerDangerZone}>
+                  <button
+                    className={styles.dangerBtn}
+                    onClick={() => setDeleteModal(selected)}
+                  >
+                    🗑 Delete customer permanently
+                  </button>
+                </div>
+              )}
 
               {drawerLoading ? (
                 <div className={styles.loading}>Loading…</div>
@@ -728,5 +754,17 @@ export default function Customers() {
         )}
       </div>
     </div>
+
+    {/* ── Hard Delete Customer Modal (admin-only) ─────────── */}
+    {deleteModal && (
+      <DeleteConfirmModal
+        entityType="customer"
+        entityName={deleteModal.name}
+        description={`This will permanently delete the customer "${deleteModal.name}", ALL their projects, phases, tasks, subtasks, contacts, documents, and infrastructure records. This cannot be undone.`}
+        onConfirm={handleHardDeleteCustomer}
+        onClose={() => setDeleteModal(null)}
+      />
+    )}
+    </>
   );
 }

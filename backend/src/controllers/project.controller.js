@@ -1,5 +1,6 @@
-const ProjectService = require("../services/project.service");
-const requireRole    = require("../middlewares/requireRole");
+const ProjectService    = require("../services/project.service");
+const requireRole       = require("../middlewares/requireRole");
+const NotificationModel = require("../models/notification.model");
 
 // Only ADMIN can create projects or change the owner (project assignment).
 // MANAGER can edit other project fields (name, status, notes, dates) but
@@ -84,6 +85,12 @@ exports.update = async (req, res, next) => {
       return res.status(403).json({ error: "Only admins and leads can reassign project ownership" });
     }
     await ProjectService.update(req.params.id, req.body);
+
+    // When a project is marked Completed, dismiss all its deadline notifications
+    if (req.body.status === "Completed") {
+      await NotificationModel.dismissForCompletedProject(req.params.id);
+    }
+
     res.json({ updated: true });
   } catch (err) { next(err); }
 };

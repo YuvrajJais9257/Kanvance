@@ -22,34 +22,16 @@ function App() {
             {/* Public */}
             <Route path="/login" element={<Login />} />
 
-            {/* Protected */}
-            <Route path="/dashboard" element={
-              <ProtectedRoute><Dashboard /></ProtectedRoute>
-            } />
-            <Route path="/" element={
-              <ProtectedRoute><Projects /></ProtectedRoute>
-            } />
-            <Route path="/customers" element={
-              <ProtectedRoute><Customers /></ProtectedRoute>
-            } />
-            <Route path="/my-tasks" element={
-              <ProtectedRoute><MyTasks /></ProtectedRoute>
-            } />
-            <Route path="/users" element={
-              <ProtectedRoute><Users /></ProtectedRoute>
-            } />
-            <Route path="/access" element={
-              <ProtectedRoute><AccessManagement /></ProtectedRoute>
-            } />
-            <Route path="/reports" element={
-              <ProtectedRoute><Reports /></ProtectedRoute>
-            } />
-            <Route path="/analytics" element={
-              <ProtectedRoute><Analytics /></ProtectedRoute>
-            } />
-            <Route path="/notifications" element={
-              <ProtectedRoute><NotificationsPage /></ProtectedRoute>
-            } />
+            {/* PREVIEW MODE - Auth bypassed for design preview */}
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/" element={<Projects />} />
+            <Route path="/customers" element={<Customers />} />
+            <Route path="/my-tasks" element={<MyTasks />} />
+            <Route path="/users" element={<Users />} />
+            <Route path="/access" element={<AccessManagement />} />
+            <Route path="/reports" element={<Reports />} />
+            <Route path="/analytics" element={<Analytics />} />
+            <Route path="/notifications" element={<NotificationsPage />} />
 
             {/* Fallback */}
             <Route path="*" element={<Navigate to="/" replace />} />

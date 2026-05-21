@@ -6,6 +6,10 @@ import { useError } from "../../context/ErrorContext";
 import { useNavigate } from "react-router-dom";
 import { useAvailability } from "../../hooks/useAvailability";
 import StatusDot from "../StatusDot/StatusDot";
+import PageSkeleton from "../shared/PageSkeleton";
+import EmptyState from "../shared/EmptyState";
+import VirtualList from "../shared/VirtualList";
+import PageShell from "../shared/PageShell";
 import { useAuth } from "../../context/AuthContext";
 
 const STATUS_COLOR = {
@@ -114,12 +118,35 @@ export default function MyTasks() {
   const grouped = groupByProject(tasks);
   const useTabStrip = team.length <= 6;
 
+  const taskRows = useMemo(() => {
+    const rows = [];
+    for (const proj of grouped) {
+      rows.push({
+        type: "header",
+        id: `h-${proj.project_id}`,
+        customer_name: proj.customer_name,
+        project_id: proj.project_id,
+      });
+      for (const task of proj.tasks) {
+        rows.push({
+          type: "task",
+          id: `t-${task.subtask_id}`,
+          task,
+          customer_name: proj.customer_name,
+          project_id: proj.project_id,
+        });
+      }
+    }
+    return rows;
+  }, [grouped]);
+
   return (
     <div>
       <Sidebar />
-      <div className={styles.page}>
-
-        {/* Header */}
+      <PageShell
+        className={styles.page}
+        chrome={
+          <>
         <div className={styles.header}>
           <div>
             <h1 className={styles.title}>My Tasks</h1>
@@ -163,93 +190,88 @@ export default function MyTasks() {
             )}
           </div>
         )}
-
-        {/* Task list */}
-        <div className={styles.content}>
-          {loading ? (
-            <div className={styles.empty}>Loading…</div>
-          ) : tasks.length === 0 ? (
-            // F3.12 — empty state
-            <div className={styles.empty}>
-              No tasks assigned to {selectedMember?.name ?? "this person"} yet.
-            </div>
-          ) : (
-            // F3.9 — grouped by project, then activity group
-            grouped.map((proj) => (
-              <div key={proj.project_id} className={styles.projectSection}>
-                {/* F3.11 — clicking project name navigates to Projects page with that project expanded */}
-                <div
-                  className={styles.projectName}
-                  onClick={() => navigate("/", { state: { expandedProjectId: proj.project_id } })}
-                  title="Open in Projects"
-                  role="button"
-                  tabIndex={0}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === " ") {
-                      e.preventDefault();
-                      navigate("/", { state: { expandedProjectId: proj.project_id } });
-                    }
-                  }}
-                >
-                  {proj.customer_name}
-                  <span className={styles.projectArrow}>→</span>
+          </>
+        }
+      >
+        {loading ? (
+          <PageSkeleton variant="list" rows={5} />
+        ) : tasks.length === 0 ? (
+          <EmptyState
+            icon="✓"
+            title="All caught up"
+            message={`No tasks assigned to ${selectedMember?.name ?? "this person"} yet.`}
+          />
+        ) : (
+          <VirtualList
+            items={taskRows}
+            className={styles.taskViewport}
+            remeasureDep={taskRows.length}
+            estimateSize={(i) => (taskRows[i]?.type === "header" ? 48 : 72)}
+            getItemKey={(row) => row.id}
+            getRowRole={(row) => (row.type === "header" ? "presentation" : "listitem")}
+            renderItem={(row) => {
+              if (row.type === "header") {
+                return (
+                  <div className={styles.projectSection}>
+                    <div
+                      className={styles.projectName}
+                      onClick={() => navigate("/", { state: { expandedProjectId: row.project_id } })}
+                      title="Open in Projects"
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          navigate("/", { state: { expandedProjectId: row.project_id } });
+                        }
+                      }}
+                    >
+                      {row.customer_name}
+                      <span className={styles.projectArrow}>→</span>
+                    </div>
+                  </div>
+                );
+              }
+              const task = row.task;
+              const sc = STATUS_COLOR[task.status] ?? "#6b7280";
+              const urg = urgencyClass(task, styles);
+              const dStr = formatDate(task.due_date);
+              return (
+                <div className={`${styles.taskRow} ${urg}`}>
+                  <div className={styles.taskMain}>
+                    <div className={styles.taskGroupName}>{task.group_name}</div>
+                    <div className={styles.taskName}>
+                      {task.subtask_name}
+                      {task.inherited ? (
+                        <span className={styles.inheritedLabel} title="No explicit assignee — inherited from project owner">
+                          owner default
+                        </span>
+                      ) : null}
+                    </div>
+                  </div>
+                  <div className={styles.taskMeta}>
+                    <span
+                      className={styles.statusBadge}
+                      style={{ background: sc + "22", color: sc, border: `1px solid ${sc}44` }}
+                    >
+                      {task.status}
+                    </span>
+                    {dStr && <span className={`${styles.dueDate} ${urg}`}>{dStr}</span>}
+                    {task.flag_type && (
+                      <span
+                        className={styles.flagBadge}
+                        title={`${task.flag_type}${task.flag_reason ? ": " + task.flag_reason : ""}`}
+                      >
+                        ⚑
+                      </span>
+                    )}
+                  </div>
                 </div>
-
-                <div className={styles.taskList}>
-                  {proj.tasks.map((task) => {
-                    const sc    = STATUS_COLOR[task.status] ?? "#6b7280";
-                    const urg   = urgencyClass(task, styles);
-                    const dStr  = formatDate(task.due_date);
-
-                    return (
-                      <div key={task.subtask_id} className={`${styles.taskRow} ${urg}`}>
-                        <div className={styles.taskMain}>
-                          <div className={styles.taskGroupName}>{task.group_name}</div>
-                          <div className={styles.taskName}>
-                            {task.subtask_name}
-                            {task.inherited ? (
-                              <span className={styles.inheritedLabel} title="No explicit assignee — inherited from project owner">
-                                owner default
-                              </span>
-                            ) : null}
-                          </div>
-                        </div>
-
-                        <div className={styles.taskMeta}>
-                          {/* Status badge */}
-                          <span
-                            className={styles.statusBadge}
-                            style={{ background: sc + "22", color: sc, border: `1px solid ${sc}44` }}
-                          >
-                            {task.status}
-                          </span>
-
-                          {/* Due date */}
-                          {dStr && (
-                            <span className={`${styles.dueDate} ${urg}`}>
-                              {dStr}
-                            </span>
-                          )}
-
-                          {/* Flag indicator */}
-                          {task.flag_type && (
-                            <span
-                              className={styles.flagBadge}
-                              title={`${task.flag_type}${task.flag_reason ? ": " + task.flag_reason : ""}`}
-                            >
-                              ⚑
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-      </div>
+              );
+            }}
+          />
+        )}
+      </PageShell>
     </div>
   );
 }

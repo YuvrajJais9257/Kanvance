@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Sidebar from "../sidebar/Sidebar";
+import PageSkeleton from "../shared/PageSkeleton";
+import EmptyState from "../shared/EmptyState";
 import styles from "./AccessManagement.module.css";
 import {
   getUserGroups, createUserGroup, updateUserGroup, deleteUserGroup,
@@ -177,7 +179,7 @@ export default function AccessManagement() {
   return (
     <div>
       <Sidebar />
-      <div className={styles.page} style={{ marginLeft: "260px" }}>
+      <div className={`${styles.page} app-page-scroll`}>
 
         {/* Header */}
         <div className={styles.header}>
@@ -212,9 +214,9 @@ export default function AccessManagement() {
           <div className={styles.groupList}>
             <div className={styles.groupListHeader}>Groups</div>
             {loading ? (
-              <div className={styles.loading}>Loading…</div>
+              <PageSkeleton variant="list" rows={4} />
             ) : groups.length === 0 ? (
-              <div className={styles.empty}>No groups yet. Create one to get started.</div>
+              <EmptyState icon="👥" title="No groups yet" message="Create a group to organise access and permissions." compact />
             ) : (
               groups.map((g) => {
                 const c = PRIVILEGE_COLORS[g.privilege_level] ?? PRIVILEGE_COLORS.MEMBER;
@@ -261,9 +263,11 @@ export default function AccessManagement() {
           {/* Right — group detail / members */}
           <div className={styles.groupDetail}>
             {!selectedGroup ? (
-              <div className={styles.detailEmpty}>
-                Select a group on the left to view its members.
-              </div>
+              <EmptyState
+                icon="←"
+                title="Select a group"
+                message="Choose a group on the left to view and manage its members."
+              />
             ) : (
               <>
                 <div className={styles.detailHeader}>
@@ -291,9 +295,9 @@ export default function AccessManagement() {
 
                 <div className={styles.memberList}>
                   {membersLoading ? (
-                    <div className={styles.loading}>Loading members…</div>
+                    <PageSkeleton variant="list" rows={3} />
                   ) : members.length === 0 ? (
-                    <div className={styles.empty}>No members in this group yet.</div>
+                    <EmptyState icon="👤" title="No members" message="Assign users to this group to grant access." compact />
                   ) : (
                     members.map((m) => (
                       <div key={m.id} className={styles.memberRow}>

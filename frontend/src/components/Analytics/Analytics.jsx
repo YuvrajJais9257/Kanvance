@@ -17,6 +17,14 @@ import {
 } from "../../api";
 import { useError } from "../../context/ErrorContext";
 import { useAuth } from "../../context/AuthContext";
+import PageSkeleton from "../shared/PageSkeleton";
+import EmptyState from "../shared/EmptyState";
+import Sparkline from "../Dashboard/Sparkline";
+import VirtualList from "../shared/VirtualList";
+import Pagination from "../shared/Pagination";
+import { useClientPagination } from "../../hooks/useClientPagination";
+
+const TABLE_PAGE_SIZE = 15;
 
 const STATUS_COLORS = {
   "Done":              "#22c55e",
@@ -38,7 +46,7 @@ const PROJECT_STATUS_COLORS = {
 };
 
 // ── Mini bar component ────────────────────────────────────────────────────
-function Bar({ pct, color = "#6366f1", height = 8 }) {
+function Bar({ pct, color = "#0ea5e9", height = 8 }) {
   return (
     <div className={styles.barTrack} style={{ height }}>
       <div
@@ -50,13 +58,16 @@ function Bar({ pct, color = "#6366f1", height = 8 }) {
 }
 
 // ── KPI card ──────────────────────────────────────────────────────────────
-function KpiCard({ label, value, sub, color = "#6366f1", icon }) {
+function KpiCard({ label, value, sub, color = "#0ea5e9", icon, seed = 0 }) {
   return (
     <div className={styles.kpiCard}>
       {icon && <span className={styles.kpiIcon}>{icon}</span>}
       <div className={styles.kpiValue} style={{ color }}>{value ?? "—"}</div>
       <div className={styles.kpiLabel}>{label}</div>
       {sub && <div className={styles.kpiSub}>{sub}</div>}
+      <div className={styles.kpiSpark}>
+        <Sparkline seed={seed} color={color} />
+      </div>
     </div>
   );
 }
@@ -113,10 +124,14 @@ export default function Analytics() {
   const maxHours = Math.max(...utilisation.map((u) => Number(u.total_hours) || 0), 1);
   const totalSubtasks = statusBreak.reduce((s, r) => s + Number(r.count), 0);
 
+  const completionPag = useClientPagination(completion, TABLE_PAGE_SIZE, activeTab);
+  const hoursPag = useClientPagination(hoursData, TABLE_PAGE_SIZE, `${activeTab}-hours`);
+  const blockedPag = useClientPagination(blocked, TABLE_PAGE_SIZE, `${activeTab}-blocked`);
+
   return (
     <div>
       <Sidebar />
-      <div className={styles.page} style={{ marginLeft: "260px" }}>
+      <div className={`${styles.page} app-page-scroll`}>
 
         {/* Header */}
         <div className={styles.header}>
@@ -150,7 +165,7 @@ export default function Analytics() {
         </div>
 
         {loading ? (
-          <div className={styles.loading}>Loading analytics…</div>
+          <PageSkeleton variant="analytics" />
         ) : (
           <>
             {/* ── Overview tab ──────────────────────────────────────── */}
@@ -158,23 +173,23 @@ export default function Analytics() {
               <div>
                 {/* KPI cards */}
                 <div className={styles.kpiGrid}>
-                  <KpiCard icon="📁" label="Total Projects"    value={summary.total_projects}    color="#6366f1" />
-                  <KpiCard icon="✅" label="Completed"         value={summary.completed_projects} color="#22c55e" />
-                  <KpiCard icon="⚠️" label="At Risk"           value={summary.at_risk_projects}   color="#f59e0b" />
-                  <KpiCard icon="🔴" label="Delayed"           value={summary.delayed_projects}   color="#ef4444" />
-                  <KpiCard icon="📋" label="Total Tasks"       value={summary.total_subtasks}     color="#94a3b8" />
-                  <KpiCard icon="🎯" label="Completion Rate"
+                  <KpiCard seed={1} icon="📁" label="Total Projects"    value={summary.total_projects}    color="#0ea5e9" />
+                  <KpiCard seed={2} icon="✅" label="Completed"         value={summary.completed_projects} color="#22c55e" />
+                  <KpiCard seed={3} icon="⚠️" label="At Risk"           value={summary.at_risk_projects}   color="#f59e0b" />
+                  <KpiCard seed={4} icon="🔴" label="Delayed"           value={summary.delayed_projects}   color="#ef4444" />
+                  <KpiCard seed={5} icon="📋" label="Total Tasks"       value={summary.total_subtasks}     color="#94a3b8" />
+                  <KpiCard seed={6} icon="🎯" label="Completion Rate"
                     value={`${summary.overall_completion_pct ?? 0}%`}
                     color="#14b8a6"
                     sub={`${summary.done_subtasks} of ${summary.total_subtasks} done`}
                   />
-                  <KpiCard icon="🚫" label="Blocked Tasks"     value={summary.blocked_subtasks}   color="#ef4444" />
-                  <KpiCard icon="⏱️" label="Hours Logged"      value={summary.total_hours_logged} color="#a78bfa" />
+                  <KpiCard seed={7} icon="🚫" label="Blocked Tasks"     value={summary.blocked_subtasks}   color="#ef4444" />
+                  <KpiCard seed={8} icon="⏱️" label="Hours Logged"      value={summary.total_hours_logged} color="#a78bfa" />
                 </div>
 
                 {/* Status breakdown */}
                 <div className={styles.section}>
-                  <h2 className={styles.sectionTitle}>Task Status Breakdown</h2>
+                  <h2 className={`${styles.sectionTitle} section-heading-accent`}>Task Status Breakdown</h2>
                   <div className={styles.statusGrid}>
                     {statusBreak.map((s) => {
                       const color = STATUS_COLORS[s.status] ?? "#6b7280";
@@ -197,7 +212,7 @@ export default function Analytics() {
             {/* ── Projects tab ──────────────────────────────────────── */}
             {activeTab === "Projects" && (
               <div className={styles.section}>
-                <h2 className={styles.sectionTitle}>Project Completion Rates</h2>
+                <h2 className={`${styles.sectionTitle} section-heading-accent`}>Project Completion Rates</h2>
                 <div className={styles.tableWrap}>
                   <table className={styles.table}>
                     <thead>
@@ -213,7 +228,7 @@ export default function Analytics() {
                       </tr>
                     </thead>
                     <tbody>
-                      {completion.map((p) => {
+                      {completionPag.slice.map((p) => {
                         const psc = PROJECT_STATUS_COLORS[p.project_status] ?? "#6b7280";
                         const pct = Number(p.completion_pct) || 0;
                         return (
@@ -244,6 +259,13 @@ export default function Analytics() {
                     </tbody>
                   </table>
                 </div>
+                <Pagination
+                  page={completionPag.page}
+                  totalPages={completionPag.totalPages}
+                  totalItems={completionPag.totalItems}
+                  pageSize={TABLE_PAGE_SIZE}
+                  onPageChange={completionPag.setPage}
+                />
               </div>
             )}
 
@@ -252,13 +274,17 @@ export default function Analytics() {
               <div>
                 {/* Utilisation bars */}
                 <div className={styles.section}>
-                  <h2 className={styles.sectionTitle}>Team Utilisation</h2>
-                  <div className={styles.utilisationGrid}>
-                    {utilisation.map((u) => {
+                  <h2 className={`${styles.sectionTitle} section-heading-accent`}>Team Utilisation</h2>
+                  <VirtualList
+                    items={utilisation}
+                    className={styles.utilisationViewport}
+                    estimateSize={() => 108}
+                    getItemKey={(u) => u.user_id}
+                    renderItem={(u) => {
                       const hrs = Number(u.total_hours) || 0;
                       const pct = Math.round((hrs / maxHours) * 100);
                       return (
-                        <div key={u.user_id} className={styles.utilisationCard}>
+                        <div className={styles.utilisationCard}>
                           <div className={styles.utilisationTop}>
                             <span className={styles.utilisationAvatar}>{u.user_name[0]}</span>
                             <div className={styles.utilisationInfo}>
@@ -267,7 +293,7 @@ export default function Analytics() {
                             </div>
                             <span className={styles.utilisationHours}>{hrs}h</span>
                           </div>
-                          <Bar pct={pct} color="#6366f1" height={6} />
+                          <Bar pct={pct} color="#0ea5e9" height={6} />
                           <div className={styles.utilisationMeta}>
                             <span>{u.projects_worked ?? 0} projects</span>
                             <span>{u.assigned_subtasks ?? 0} tasks</span>
@@ -278,13 +304,13 @@ export default function Analytics() {
                           </div>
                         </div>
                       );
-                    })}
-                  </div>
+                    }}
+                  />
                 </div>
 
                 {/* Hours per person per project */}
                 <div className={styles.section}>
-                  <h2 className={styles.sectionTitle}>Hours per Person per Project</h2>
+                  <h2 className={`${styles.sectionTitle} section-heading-accent`}>Hours per Person per Project</h2>
                   <div className={styles.tableWrap}>
                     <table className={styles.table}>
                       <thead>
@@ -298,7 +324,7 @@ export default function Analytics() {
                         </tr>
                       </thead>
                       <tbody>
-                        {hoursData.map((r, i) => {
+                        {hoursPag.slice.map((r, i) => {
                           const userMax = Math.max(
                             ...hoursData.filter((x) => x.user_name === r.user_name)
                               .map((x) => Number(x.hours_logged)), 1
@@ -312,12 +338,12 @@ export default function Analytics() {
                               <td><span className={styles.typePill}>{r.project_type}</span></td>
                               <td className={styles.numCell}>{r.hours_logged}h</td>
                               <td className={styles.barCell}>
-                                <Bar pct={pct} color="#6366f1" height={8} />
+                                <Bar pct={pct} color="#0ea5e9" height={8} />
                               </td>
                             </tr>
                           );
                         })}
-                        {hoursData.length === 0 && (
+                        {hoursPag.totalItems === 0 && (
                           <tr><td colSpan={6} className={styles.empty}>
                             No hours logged yet. Use the Reports page to upload timesheets.
                           </td></tr>
@@ -325,6 +351,13 @@ export default function Analytics() {
                       </tbody>
                     </table>
                   </div>
+                  <Pagination
+                    page={hoursPag.page}
+                    totalPages={hoursPag.totalPages}
+                    totalItems={hoursPag.totalItems}
+                    pageSize={TABLE_PAGE_SIZE}
+                    onPageChange={hoursPag.setPage}
+                  />
                 </div>
               </div>
             )}
@@ -332,18 +365,19 @@ export default function Analytics() {
             {/* ── Blocked Tasks tab ─────────────────────────────────── */}
             {activeTab === "Blocked Tasks" && (
               <div className={styles.section}>
-                <h2 className={styles.sectionTitle}>
+                <h2 className={`${styles.sectionTitle} section-heading-accent`}>
                   Blocked &amp; Awaiting Feedback
                   <span className={styles.blockedCount}>{blocked.length}</span>
                 </h2>
                 {blocked.length === 0 ? (
-                  <div className={styles.allClear}>
-                    <span className={styles.allClearIcon}>✅</span>
-                    <span>No blocked or awaiting-feedback tasks right now.</span>
-                  </div>
+                  <EmptyState
+                    icon="✅"
+                    title="All clear"
+                    message="No blocked or awaiting-feedback tasks right now."
+                  />
                 ) : (
                   <div className={styles.blockedList}>
-                    {blocked.map((b) => {
+                    {blockedPag.slice.map((b) => {
                       const sc = STATUS_COLORS[b.status] ?? "#6b7280";
                       return (
                         <div key={b.subtask_id} className={styles.blockedCard}>
@@ -382,6 +416,15 @@ export default function Analytics() {
                       );
                     })}
                   </div>
+                )}
+                {blocked.length > 0 && (
+                  <Pagination
+                    page={blockedPag.page}
+                    totalPages={blockedPag.totalPages}
+                    totalItems={blockedPag.totalItems}
+                    pageSize={TABLE_PAGE_SIZE}
+                    onPageChange={blockedPag.setPage}
+                  />
                 )}
               </div>
             )}

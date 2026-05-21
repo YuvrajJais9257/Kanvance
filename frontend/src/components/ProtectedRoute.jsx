@@ -12,5 +12,5 @@ export default function ProtectedRoute({ children }) {
 
   if (loading) return null;
   if (!user)   return <Navigate to="/login" replace />;
-  return children;
+  return <div className="page-enter">{children}</div>;
 }

@@ -1,13 +1,7 @@
 /* ── Users Page ──────────────────────────────────────────────── */
 .page {
-  min-height: 100vh;
   background: var(--bg-base);
   color: var(--text-primary);
-  margin-left: 260px;
-}
-
-@media (max-width: 900px) {
-  .page { margin-left: 0; }
 }
 
 .header {
@@ -22,9 +16,11 @@
 
 .title {
   margin: 0;
-  font-size: 1.25rem;
+  font-family: var(--font-display);
+  font-size: 1.5rem;
   font-weight: 700;
   color: var(--text-heading);
+  letter-spacing: -0.02em;
 }
 
 .subtitle {
@@ -95,7 +91,7 @@
 
 /* ── Table ── */
 .tableWrap {
-  padding: 0 28px;
+  padding: 0 28px 8px;
   overflow-x: auto;
 }
 
@@ -110,13 +106,19 @@
 }
 
 .table th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: rgba(17, 24, 39, 0.92);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   text-align: left;
   padding: 10px 14px;
   font-size: 0.6875rem;
   font-weight: 700;
   color: var(--text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.1em;
 }
 
 .row {
@@ -124,11 +126,10 @@
   transition: var(--transition-fast);
 }
 
-.row:nth-child(even) {
-  background: rgba(255, 255, 255, 0.015);
+.row:hover {
+  background: var(--accent-light);
+  box-shadow: inset 3px 0 0 var(--accent);
 }
-
-.row:hover { background: var(--accent-light); }
 
 .table td {
   padding: 12px 14px;
@@ -227,7 +228,7 @@
   border-color: var(--accent-border);
 }
 
-.editBtn:hover { background: rgba(99, 102, 241, 0.25); }
+.editBtn:hover { background: var(--accent-light); }
 
 .warnBtn {
   background: var(--warning-light);
@@ -281,10 +282,9 @@
   inset: 0;
   background: rgba(0, 0, 0, 0.65);
   display: flex;
-  align-items: center;
-  justify-content: center;
+  align-items: stretch;
+  justify-content: flex-end;
   z-index: 100;
-  padding: 20px;
   backdrop-filter: blur(6px);
   animation: fadeIn 0.18s ease;
 }
@@ -295,18 +295,22 @@
 }
 
 .modal {
-  width: min(600px, 100%);
+  width: min(600px, 100vw);
+  max-height: 100vh;
+  margin-left: auto;
   background: var(--bg-elevated);
   border: 1px solid var(--border-default);
-  border-radius: var(--radius-xl);
+  border-radius: var(--radius-xl) 0 0 var(--radius-xl);
   box-shadow: var(--shadow-modal);
   overflow: hidden;
-  animation: scaleIn 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  animation: slideInRight 0.28s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-@keyframes scaleIn {
-  from { opacity: 0; transform: scale(0.96) translateY(8px); }
-  to   { opacity: 1; transform: scale(1) translateY(0); }
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(100%); }
+  to   { opacity: 1; transform: translateX(0); }
 }
 
 .modalHeader {
@@ -339,10 +343,12 @@
 .closeBtn:hover { background: var(--bg-surface); color: var(--text-primary); }
 
 .form {
-  padding: 20px 24px 24px;
+  padding: 20px 24px;
   display: flex;
   flex-direction: column;
   gap: 14px;
+  flex: 1;
+  overflow-y: auto;
 }
 
 .formRow {
@@ -390,7 +396,12 @@
   display: flex;
   justify-content: flex-end;
   gap: 10px;
-  margin-top: 4px;
+  margin-top: auto;
+  padding: 16px 24px;
+  border-top: 1px solid var(--border-subtle);
+  background: var(--bg-surface);
+  position: sticky;
+  bottom: 0;
 }
 
 .cancelBtn {

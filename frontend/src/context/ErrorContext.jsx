@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useCallback, useRef } from "react";
+import toastStyles from "./ErrorToast.module.css";
 
 const ErrorContext = createContext(null);
 
@@ -22,22 +23,12 @@ export function ErrorProvider({ children }) {
     <ErrorContext.Provider value={{ showError }}>
       {children}
       {message && (
-        <div style={{
-          position: "fixed", bottom: "24px", left: "50%",
-          transform: "translateX(-50%)",
-          background: "#1f2937", color: "#f87171",
-          border: "1px solid #ef444466",
-          padding: "12px 20px", borderRadius: "8px",
-          fontSize: "14px", zIndex: 9999,
-          display: "flex", alignItems: "center", gap: "12px",
-          boxShadow: "0 4px 20px rgba(0,0,0,0.4)",
-          maxWidth: "480px",
-        }}>
-          <span>⚠ {message}</span>
-          <button onClick={dismiss} style={{
-            background: "none", border: "none", color: "#9ca3af",
-            cursor: "pointer", fontSize: "16px", lineHeight: 1,
-          }}>✕</button>
+        <div className={toastStyles.toast} role="alert">
+          <span className={toastStyles.icon} aria-hidden>⚠</span>
+          <span className={toastStyles.message}>{message}</span>
+          <button type="button" className={toastStyles.dismiss} onClick={dismiss} aria-label="Dismiss">
+            ✕
+          </button>
         </div>
       )}
     </ErrorContext.Provider>

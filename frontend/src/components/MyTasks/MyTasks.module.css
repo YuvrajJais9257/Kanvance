@@ -1,13 +1,11 @@
 /* ── My Tasks Page ───────────────────────────────────────────── */
 .page {
-  min-height: 100vh;
   background: var(--bg-base);
   color: var(--text-primary);
-  margin-left: 260px;
 }
 
-@media (max-width: 900px) {
-  .page { margin-left: 0; }
+.taskViewport {
+  padding: 0 28px 16px 36px;
 }
 
 /* ── Header ── */
@@ -23,9 +21,11 @@
 
 .title {
   margin: 0;
-  font-size: 1.25rem;
+  font-family: var(--font-display);
+  font-size: 1.5rem;
   font-weight: 700;
   color: var(--text-heading);
+  letter-spacing: -0.02em;
 }
 
 .subtitle {

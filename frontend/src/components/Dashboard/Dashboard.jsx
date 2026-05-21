@@ -6,6 +6,7 @@ import { getDashboard, getProjects, createProject, getCustomers, getTeam } from 
 import { useError } from "../../context/ErrorContext";
 import { useAvailability } from "../../hooks/useAvailability";
 import StatusDot from "../StatusDot/StatusDot";
+import Sparkline from "./Sparkline";
 
 const TYPE_COLORS = {
   Implementation:   "#3b82f6",
@@ -83,18 +84,18 @@ export default function Dashboard() {
 
   const statCards = summary
     ? [
-        { label: "TOTAL PROJECTS",    value: summary.total_projects,                          sub: `${customers.length} customers`,  color: "#4a9eff" },
-        { label: "IMPLEMENTATIONS",   value: summary.by_type["Implementation"]   ?? 0,        sub: "Active deployments",             color: "#3b82f6" },
-        { label: "MANAGED SERVICES",  value: summary.by_type["Managed Service"]  ?? 0,        sub: "Operations",                     color: "#4ade80" },
-        { label: "LICENSE RENEWALS",  value: summary.by_type["License Renewal"]  ?? 0,        sub: "Pending renewal",                color: "#facc15" },
-        { label: "OPPORTUNITIES",     value: summary.by_type["New Opportunity"]  ?? 0,        sub: "Presales / POC",                 color: "#fb923c" },
+        { label: "TOTAL PROJECTS",    value: summary.total_projects,                          sub: `${customers.length} customers`,  color: "#38bdf8", trend: "up",   seed: 1 },
+        { label: "IMPLEMENTATIONS",   value: summary.by_type["Implementation"]   ?? 0,        sub: "Active deployments",             color: "#3b82f6", trend: "up",   seed: 2 },
+        { label: "MANAGED SERVICES",  value: summary.by_type["Managed Service"]  ?? 0,        sub: "Operations",                     color: "#4ade80", trend: "flat", seed: 3 },
+        { label: "LICENSE RENEWALS",  value: summary.by_type["License Renewal"]  ?? 0,        sub: "Pending renewal",                color: "#eab308", trend: "down", seed: 4 },
+        { label: "OPPORTUNITIES",     value: summary.by_type["New Opportunity"]  ?? 0,        sub: "Presales / POC",                 color: "#fb923c", trend: "up",   seed: 5 },
       ]
     : [];
 
   return (
     <div>
       <Sidebar />
-      <div className={styles.dashboard}>
+      <div className={`${styles.dashboard} app-page-scroll`}>
 
         {/* Header */}
         <div className={styles.header}>
@@ -109,7 +110,18 @@ export default function Dashboard() {
         </div>
 
         {loading ? (
-          <div className={styles.loading}>Loading…</div>
+          <div className={styles.skeletonWrap}>
+            <div className={styles.statsRow}>
+              {[1, 2, 3, 4, 5].map((i) => (
+                <div key={i} className={`${styles.statCard} ${styles.statCardSkeleton}`}>
+                  <div className={`skeleton ${styles.skelLabel}`} />
+                  <div className={`skeleton ${styles.skelValue}`} />
+                  <div className={`skeleton ${styles.skelSub}`} />
+                </div>
+              ))}
+            </div>
+            <div className={`skeleton ${styles.skelBlock}`} />
+          </div>
         ) : (
           <>
             {/* Critical deadline banner — overdue/today only, dismissible per session */}
@@ -118,10 +130,26 @@ export default function Dashboard() {
             {/* Stat Cards */}
             <div className={styles.statsRow}>
               {statCards.map((card) => (
-                <div key={card.label} className={styles.statCard}>
+                <div
+                  key={card.label}
+                  className={styles.statCard}
+                  data-variant={card.label.split(" ")[0].toLowerCase()}
+                >
+                  <span
+                    className={styles.statTrend}
+                    style={{ color: card.trend === "down" ? "var(--danger-text)" : card.trend === "up" ? "var(--success-text)" : "var(--text-muted)" }}
+                    title={card.trend === "up" ? "Trending up" : card.trend === "down" ? "Trending down" : "Stable"}
+                    aria-hidden
+                  >
+                    {card.trend === "up" ? "↗" : card.trend === "down" ? "↘" : "→"}
+                  </span>
                   <span className={styles.statLabel}>{card.label}</span>
                   <span className={styles.statValue} style={{ color: card.color }}>{card.value}</span>
                   <span className={styles.statSub}>{card.sub}</span>
+                  <div className={styles.statSpark}>
+                    <Sparkline seed={card.seed} color={card.color} />
+                    <span className={styles.sparkCaption}>7-day trend</span>
+                  </div>
                 </div>
               ))}
             </div>
@@ -130,7 +158,7 @@ export default function Dashboard() {
             <div className={styles.midRow}>
               <div className={styles.attentionCard}>
                 <div className={styles.sectionHeader}>
-                  <span className={styles.sectionTitle}>NEEDS ATTENTION</span>
+                  <span className={`${styles.sectionTitle} section-heading-accent`}>NEEDS ATTENTION</span>
                   <span className={styles.badge} style={{ background: "#ef4444" }}>
                     {summary?.needs_attention?.length ?? 0}
                   </span>
@@ -150,8 +178,9 @@ export default function Dashboard() {
                           </div>
                         </div>
                         <span
-                          className={styles.statusBadge}
+                          className={`${styles.statusBadge} badge-pill`}
                           style={{ background: sc + "22", color: sc, border: `1px solid ${sc}55` }}
+                          title={item.status}
                         >
                           {item.status}
                         </span>
@@ -159,20 +188,26 @@ export default function Dashboard() {
                     );
                   })}
                   {(summary?.needs_attention ?? []).length === 0 && (
-                    <div className={styles.emptyDue}>All projects on track</div>
+                    <div className={styles.emptyState}>
+                      <span className={styles.emptyIcon} aria-hidden>✓</span>
+                      <p>All projects on track</p>
+                    </div>
                   )}
                 </div>
               </div>
 
               <div className={styles.dueCard}>
                 <div className={styles.sectionHeader}>
-                  <span className={styles.sectionTitle}>DUE IN 30 DAYS</span>
+                  <span className={`${styles.sectionTitle} section-heading-accent`}>DUE IN 30 DAYS</span>
                   <span className={styles.badge} style={{ background: "#374151" }}>
                     {summary?.due_in_30_days?.length ?? 0}
                   </span>
                 </div>
                 {(summary?.due_in_30_days ?? []).length === 0 ? (
-                  <div className={styles.emptyDue}>No upcoming deadlines</div>
+                  <div className={styles.emptyState}>
+                    <span className={styles.emptyIcon} aria-hidden>📅</span>
+                    <p>No upcoming deadlines</p>
+                  </div>
                 ) : (
                   <div className={styles.attentionList}>
                     {summary.due_in_30_days.map((item) => (
@@ -192,8 +227,9 @@ export default function Dashboard() {
             {/* All Projects Table */}
             <div className={styles.tableCard}>
               <div className={styles.sectionHeader}>
-                <span className={styles.sectionTitle}>ALL PROJECTS</span>
+                <span className={`${styles.sectionTitle} section-heading-accent`}>ALL PROJECTS</span>
               </div>
+              <div className={styles.tableScroll}>
               <table className={styles.table}>
                 <thead>
                   <tr>
@@ -225,15 +261,16 @@ export default function Dashboard() {
                         </td>
                         <td>
                           <div className={styles.progressWrap}>
-                            <div className={styles.progressBar}>
+                            <div className={`${styles.progressBar} progress-bar-shimmer`}>
                               <div className={styles.progressFill} style={{ width: `${progress}%` }} />
                             </div>
                             <span className={styles.progressPct}>{progress}%</span>
                           </div>
                         </td>
                         <td>
-                          <span className={styles.statusBadge}
-                            style={{ background: sc + "22", color: sc, border: `1px solid ${sc}44` }}>
+                          <span className={`${styles.statusBadge} badge-pill`}
+                            style={{ background: sc + "22", color: sc, border: `1px solid ${sc}44` }}
+                            title={p.status}>
                             {p.status}
                           </span>
                         </td>
@@ -243,6 +280,7 @@ export default function Dashboard() {
                   })}
                 </tbody>
               </table>
+              </div>
             </div>
           </>
         )}
@@ -253,9 +291,9 @@ export default function Dashboard() {
             <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
               <div className={styles.modalHeader}>
                 <span>Add New Project</span>
-                <button className={styles.closeBtn} onClick={() => setShowModal(false)}>✕</button>
+                <button type="button" className={styles.closeBtn} onClick={() => setShowModal(false)} aria-label="Close">✕</button>
               </div>
-              <form onSubmit={handleAdd} className={styles.modalForm}>
+              <form id="add-project-form" onSubmit={handleAdd} className={styles.modalForm}>
                 <label>Customer
                   <select required value={form.customer_id}
                     onChange={(e) => setForm({ ...form, customer_id: e.target.value })}>
@@ -293,6 +331,7 @@ export default function Dashboard() {
                     ))}
                   </select>
                 </label>
+                <div className={styles.formDivider} role="separator" />
                 <label>Due Date
                   <input type="date" value={form.due_date}
                     onChange={(e) => setForm({ ...form, due_date: e.target.value })} />
@@ -307,10 +346,12 @@ export default function Dashboard() {
                     <option>Prospecting</option>
                   </select>
                 </label>
-                <button type="submit" className={styles.addBtn} disabled={saving}>
+              </form>
+              <div className={styles.modalFooter}>
+                <button type="submit" form="add-project-form" className={styles.addBtn} disabled={saving}>
                   {saving ? "Saving…" : "Add Project"}
                 </button>
-              </form>
+              </div>
             </div>
           </div>
         )}

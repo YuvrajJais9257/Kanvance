@@ -4,7 +4,6 @@
   min-height: 100vh;
   background: var(--bg-base);
   color: var(--text-primary);
-  margin-left: 260px;
 }
 
 @media (max-width: 900px) {
@@ -19,10 +18,12 @@
 }
 
 .title {
-  font-size: 1.25rem;
+  font-family: var(--font-display);
+  font-size: 1.5rem;
   font-weight: 700;
   color: var(--text-heading);
   margin: 0 0 4px;
+  letter-spacing: -0.02em;
 }
 
 .subtitle {
@@ -319,7 +320,7 @@
   transition: var(--transition-fast);
 }
 
-.editBtn:hover { background: rgba(99, 102, 241, 0.25); }
+.editBtn:hover { background: var(--accent-light); }
 
 .dangerBtn {
   background: var(--danger-light);
@@ -341,8 +342,8 @@
   inset: 0;
   background: rgba(0, 0, 0, 0.65);
   display: flex;
-  align-items: center;
-  justify-content: center;
+  align-items: stretch;
+  justify-content: flex-end;
   z-index: 1000;
   backdrop-filter: blur(6px);
   animation: fadeIn 0.18s ease;
@@ -356,18 +357,21 @@
 .modal {
   background: var(--bg-elevated);
   border: 1px solid var(--border-default);
-  border-radius: var(--radius-xl);
-  width: 100%;
-  max-width: 520px;
+  border-radius: var(--radius-xl) 0 0 var(--radius-xl);
+  width: min(520px, 100vw);
+  max-height: 100vh;
+  margin-left: auto;
   padding: 0;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
   box-shadow: var(--shadow-modal);
-  animation: scaleIn 0.2s ease;
+  animation: slideInRight 0.28s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-@keyframes scaleIn {
-  from { opacity: 0; transform: scale(0.96) translateY(8px); }
-  to   { opacity: 1; transform: scale(1) translateY(0); }
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(100%); }
+  to   { opacity: 1; transform: translateX(0); }
 }
 
 .modalHeader {

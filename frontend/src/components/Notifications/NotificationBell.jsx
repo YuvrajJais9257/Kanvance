@@ -161,6 +161,11 @@ export default function NotificationBell() {
             )}
           </div>
 
+          {notifications.length > 20 && (
+            <p className={styles.capNote}>
+              Showing latest 20 of {notifications.length}
+            </p>
+          )}
           <button className={styles.viewAll} onClick={handleViewAll}>
             View all notifications →
           </button>

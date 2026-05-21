@@ -7,6 +7,9 @@
 import { useState, useEffect, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import Sidebar from "../sidebar/Sidebar";
+import PageSkeleton from "../shared/PageSkeleton";
+import EmptyState from "../shared/EmptyState";
+import Pagination from "../shared/Pagination";
 import { getNotifications, markAllNotificationsRead, markNotificationRead } from "../../api";
 import styles from "./NotificationsPage.module.css";
 
@@ -103,7 +106,7 @@ export default function NotificationsPage() {
   return (
     <div>
       <Sidebar />
-      <div className={styles.page}>
+      <div className={`${styles.page} app-page-scroll`}>
         {/* Header */}
         <div className={styles.header}>
           <div>
@@ -136,13 +139,17 @@ export default function NotificationsPage() {
 
         {/* List */}
         {loading ? (
-          <div className={styles.loading}>Loading…</div>
+          <PageSkeleton variant="list" rows={6} />
         ) : paged.length === 0 ? (
-          <div className={styles.empty}>
-            {activeFilter === "all"
-              ? "No notifications yet."
-              : `No ${FILTER_LABELS[activeFilter].toLowerCase()} notifications.`}
-          </div>
+          <EmptyState
+            icon="🔔"
+            title="No notifications"
+            message={
+              activeFilter === "all"
+                ? "You're all caught up — nothing to show right now."
+                : `No ${FILTER_LABELS[activeFilter].toLowerCase()} notifications.`
+            }
+          />
         ) : (
           <div className={styles.list}>
             {paged.map((n) => {
@@ -193,27 +200,14 @@ export default function NotificationsPage() {
         )}
 
         {/* Pagination */}
-        {totalPages > 1 && (
-          <div className={styles.pagination}>
-            <button
-              className={styles.pageBtn}
-              disabled={page === 1}
-              onClick={() => setPage((p) => p - 1)}
-            >
-              ← Prev
-            </button>
-            <span className={styles.pageInfo}>
-              Page {page} of {totalPages}
-            </span>
-            <button
-              className={styles.pageBtn}
-              disabled={page === totalPages}
-              onClick={() => setPage((p) => p + 1)}
-            >
-              Next →
-            </button>
-          </div>
-        )}
+        <Pagination
+          page={page}
+          totalPages={totalPages}
+          totalItems={notifications.length}
+          pageSize={PAGE_SIZE}
+          onPageChange={setPage}
+          className={styles.pagination}
+        />
       </div>
     </div>
   );

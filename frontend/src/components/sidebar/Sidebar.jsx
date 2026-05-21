@@ -7,6 +7,8 @@ import { useAvailability } from "../../hooks/useAvailability";
 import StatusDot from "../StatusDot/StatusDot";
 import StatusPicker from "../StatusDot/StatusPicker";
 import NotificationBell from "../Notifications/NotificationBell";
+import NavIcon from "./NavIcon";
+import EmptyState from "../shared/EmptyState";
 // Note: user creation is handled exclusively in User Management (/users)
 
 const Sidebar = () => {
@@ -45,19 +47,42 @@ const Sidebar = () => {
     }
   };
 
-  const navItems = [
-    { label: "Dashboard",      path: "/dashboard" },
-    { label: "Projects",       path: "/" },
-    { label: "Customers",      path: "/customers" },
-    { label: "My Tasks",       path: "/my-tasks" },
-    { label: "Analytics",      path: "/analytics" },
-    // Users page — visible to ADMIN, LEAD, and MANAGER
-    ...( ["ADMIN","LEAD","MANAGER"].includes(user?.role) ? [{ label: "Users", path: "/users" }] : [] ),
-    // Reports — visible to ADMIN, LEAD, MANAGER
-    ...( ["ADMIN","LEAD","MANAGER"].includes(user?.role) ? [{ label: "Reports", path: "/reports" }] : [] ),
-    // Access & Group Management — ADMIN only
-    ...( user?.role === "ADMIN" ? [{ label: "Access & Groups", path: "/access" }] : [] ),
+  const coreViews = [
+    { label: "Dashboard",  path: "/dashboard",  icon: "dashboard" },
+    { label: "Projects",   path: "/",           icon: "projects" },
+    { label: "Customers",  path: "/customers",  icon: "customers" },
+    { label: "My Tasks",   path: "/my-tasks",   icon: "tasks" },
+    { label: "Analytics",  path: "/analytics",  icon: "analytics" },
   ];
+
+  const adminViews = [
+    ...( ["ADMIN", "LEAD", "MANAGER"].includes(user?.role)
+      ? [{ label: "Users", path: "/users", icon: "users" }] : [] ),
+    ...( ["ADMIN", "LEAD", "MANAGER"].includes(user?.role)
+      ? [{ label: "Reports", path: "/reports", icon: "reports" }] : [] ),
+    ...( user?.role === "ADMIN"
+      ? [{ label: "Access & Groups", path: "/access", icon: "access" }] : [] ),
+  ];
+
+  const renderNavItem = ({ label, path, icon }) => (
+    <div
+      key={path}
+      className={`${styles.menuItem} ${location.pathname === path ? styles.active : ""}`}
+      onClick={() => navigate(path)}
+      role="button"
+      tabIndex={0}
+      aria-current={location.pathname === path ? "page" : undefined}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          navigate(path);
+        }
+      }}
+    >
+      <NavIcon name={icon} className={styles.icon} />
+      <span className={styles.menuLabel}>{label}</span>
+    </div>
+  );
 
   return (
     <>
@@ -70,27 +95,22 @@ const Sidebar = () => {
           </div>
         </div>
 
-        <div className={styles.section}>
-          <p className={styles.sectionTitle}>VIEWS</p>
-          {navItems.map(({ label, path }) => (
-            <div
-              key={path}
-              className={`${styles.menuItem} ${location.pathname === path ? styles.active : ""}`}
-              onClick={() => navigate(path)}
-              role="button"
-              tabIndex={0}
-              aria-current={location.pathname === path ? "page" : undefined}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault();
-                  navigate(path);
-                }
-              }}
-            >
-              {label}
-            </div>
-          ))}
-        </div>
+        <nav className={styles.navScroll}>
+          <div className={styles.section}>
+            <p className={styles.sectionTitle}>Core Views</p>
+            {coreViews.map(renderNavItem)}
+          </div>
+
+          {adminViews.length > 0 && (
+            <>
+              <div className={styles.sectionDivider} />
+              <div className={styles.section}>
+                <p className={styles.sectionTitle}>Admin Views</p>
+                {adminViews.map(renderNavItem)}
+              </div>
+            </>
+          )}
+        </nav>
 
         {/* Footer — user info + logout + team management */}
         <div className={styles.footer}>
@@ -157,7 +177,7 @@ const Sidebar = () => {
             {/* Current members */}
             <div className={styles.memberList}>
               {team.length === 0 && (
-                <div className={styles.emptyTeam}>No team members yet.</div>
+                <EmptyState icon="👥" message="No team members yet." compact className={styles.emptyTeam} />
               )}
               {team.map((m) => (
                 <div key={m.id} className={styles.memberRow}>

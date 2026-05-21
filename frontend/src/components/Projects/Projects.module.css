@@ -1,14 +1,12 @@
 /* ── Projects Page ───────────────────────────────────────────── */
 .page {
-  min-height: 100vh;
   padding: 0;
   background: var(--bg-base);
   color: var(--text-primary);
-  margin-left: 260px;
 }
 
-@media (max-width: 900px) {
-  .page { margin-left: 0; }
+.listViewport {
+  padding: 0 28px 16px 36px;
 }
 
 .header {
@@ -23,9 +21,15 @@
 
 .title {
   margin: 0;
-  font-size: 1.25rem;
+  font-family: var(--font-display);
+  font-size: 1.5rem;
   font-weight: 700;
   color: var(--text-heading);
+  letter-spacing: -0.02em;
+}
+
+.listSkeleton {
+  padding: 20px 28px 28px 36px;
 }
 
 .subtitle {
@@ -420,6 +424,8 @@
 
 .subtaskList {
   padding: 6px 0;
+  max-height: min(360px, 50vh);
+  overflow-y: auto;
 }
 
 /* ── Subtask row ── */
@@ -516,10 +522,10 @@
   inset: 0;
   background: rgba(0, 0, 0, 0.65);
   display: flex;
-  align-items: center;
-  justify-content: center;
+  align-items: stretch;
+  justify-content: flex-end;
   z-index: 50;
-  padding: 20px;
+  padding: 0;
   backdrop-filter: blur(6px);
   animation: fadeIn 0.18s ease;
 }
@@ -530,18 +536,22 @@
 }
 
 .modal {
-  width: min(720px, 100%);
+  width: min(720px, 100vw);
+  max-height: 100vh;
+  margin-left: auto;
   background: var(--bg-elevated);
   border: 1px solid var(--border-default);
-  border-radius: var(--radius-xl);
+  border-radius: var(--radius-xl) 0 0 var(--radius-xl);
   box-shadow: var(--shadow-modal);
   overflow: hidden;
-  animation: scaleIn 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  animation: slideInRight 0.28s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-@keyframes scaleIn {
-  from { opacity: 0; transform: scale(0.96) translateY(8px); }
-  to   { opacity: 1; transform: scale(1) translateY(0); }
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(100%); }
+  to   { opacity: 1; transform: translateX(0); }
 }
 
 .modalHeader {
@@ -560,8 +570,8 @@
 }
 
 .closeBtn {
-  width: 34px;
-  height: 34px;
+  width: 36px;
+  height: 36px;
   border: none;
   background: var(--bg-hover);
   color: var(--text-secondary);
@@ -623,7 +633,13 @@
   display: flex;
   justify-content: flex-end;
   gap: 10px;
-  margin-top: 10px;
+  margin-top: auto;
+  padding: 16px 20px;
+  border-top: 1px solid var(--border-subtle);
+  background: var(--bg-surface);
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
 }
 
 .cancelBtn {
@@ -1086,7 +1102,7 @@
 }
 
 .addSubtaskBtn:hover {
-  background: rgba(99, 102, 241, 0.25);
+  background: var(--accent-light);
   border-color: var(--accent);
 }
 
@@ -1253,7 +1269,7 @@
   transition: var(--transition-fast);
 }
 
-.attachAddBtn:hover { background: rgba(99, 102, 241, 0.25); }
+.attachAddBtn:hover { background: var(--accent-light); }
 
 .attachEmpty {
   color: var(--text-muted);
@@ -1441,7 +1457,7 @@
 }
 
 .pickerFileLabel:hover .pickerFileLabelText {
-  background: rgba(99, 102, 241, 0.22);
+  background: var(--accent-light);
   border-color: var(--accent);
 }
 

@@ -14,6 +14,10 @@ import {
 import { useError } from "../../context/ErrorContext";
 import { useAuth } from "../../context/AuthContext";
 import DeleteConfirmModal from "../shared/DeleteConfirmModal";
+import PageSkeleton from "../shared/PageSkeleton";
+import EmptyState from "../shared/EmptyState";
+import VirtualList from "../shared/VirtualList";
+import PageShell from "../shared/PageShell";
 
 // ── Constants ────────────────────────────────────────────────
 const typeTabs = ["All", "Implementation", "Managed Service", "License Renewal", "New Opportunity"];
@@ -753,13 +757,22 @@ const Projects = () => {
     return list;
   }, [activeTab, filterStatus, filterOwner, projects]);
 
+  const remeasureKey = `${expandedProjectId}|${expandedData[expandedProjectId]?.groups?.length ?? 0}`;
+
+  const projectEstimateSize = (index) => {
+    const p = filteredProjects[index];
+    if (!p) return 100;
+    return expandedProjectId === p.id ? 480 : 100;
+  };
+
   // ── Render ─────────────────────────────────────────────────
   return (
     <div>
       <Sidebar />
-      <div className={styles.page}>
-
-        {/* Header */}
+      <PageShell
+        className={styles.page}
+        chrome={
+          <>
         <div className={styles.header}>
           <div>
             <h1 className={styles.title}>Projects</h1>
@@ -805,18 +818,26 @@ const Projects = () => {
           </div>
           <div className={styles.count}>{filteredProjects.length} projects</div>
         </div>
-
-        {/* Project list */}
+          </>
+        }
+      >
         {loading ? (
-          <div className={styles.loading}>Loading…</div>
+          <PageSkeleton variant="list" rows={6} className={styles.listSkeleton} />
+        ) : filteredProjects.length === 0 ? (
+          <EmptyState
+            icon="📁"
+            title="No projects found"
+            message="No projects match the current filters. Try adjusting search or filters."
+          />
         ) : (
-          <div className={styles.list}>
-            {filteredProjects.length === 0 && (
-              <div className={styles.loading} style={{ paddingTop: "60px" }}>
-                No projects match the current filters.
-              </div>
-            )}
-            {filteredProjects.map((project) => {
+          <VirtualList
+            items={filteredProjects}
+            className={styles.listViewport}
+            innerClassName={styles.list}
+            remeasureDep={remeasureKey}
+            estimateSize={projectEstimateSize}
+            getItemKey={(p) => p.id}
+            renderItem={(project) => {
               const isOpen   = expandedProjectId === project.id;
               const full     = expandedData[project.id];
               const progress = project.progress ?? 0;
@@ -1255,14 +1276,15 @@ const Projects = () => {
 
                   {isOpen && !full && (
                     <div className={styles.expanded}>
-                      <div className={styles.loading}>Loading tasks…</div>
+                      <PageSkeleton variant="compact" />
                     </div>
                   )}
                 </div>
               );
-            })}
-          </div>
+            }}
+          />
         )}
+      </PageShell>
 
         {/* Flag Modal — F1.8 / F1.9 / F1.10 / F1.11 */}
         {flagModal && (
@@ -1460,7 +1482,7 @@ const Projects = () => {
               </div>
               <div className={styles.form} style={{ padding: "20px" }}>
                 {pickerLoading ? (
-                  <div className={styles.loading}>Loading…</div>
+                  <PageSkeleton variant="list" rows={4} />
                 ) : pickerItems.length === 0 ? (
                   <div style={{ color: "#64748b", fontSize: "14px", padding: "12px 0" }}>
                     {pickerModal.type === "doc"
@@ -1608,7 +1630,6 @@ const Projects = () => {
             </div>
           </div>
         )}
-      </div>
     </div>
   );
 };

@@ -60,6 +60,9 @@ exports.getForUser = async (userId, { unreadOnly = false, filter, limit = 50 } =
   }
 
   // Sort by urgency (overdue first), then by date
+  // Note: LIMIT must be inlined as an integer literal — mysql2 does not support
+  // LIMIT with a prepared-statement placeholder via pool.execute()
+  const safeLimit = Math.max(1, Math.min(500, parseInt(limit, 10) || 50));
   query += `
     ORDER BY 
       CASE n.type
@@ -71,9 +74,8 @@ exports.getForUser = async (userId, { unreadOnly = false, filter, limit = 50 } =
         ELSE 6
       END,
       n.created_at DESC
-    LIMIT ?
+    LIMIT ${safeLimit}
   `;
-  params.push(Number(limit));
 
   const [rows] = await pool.execute(query, params);
   return rows;

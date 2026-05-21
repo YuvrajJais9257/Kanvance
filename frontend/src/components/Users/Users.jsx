@@ -1,5 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
 import Sidebar from "../sidebar/Sidebar";
+import PageSkeleton from "../shared/PageSkeleton";
+import EmptyState from "../shared/EmptyState";
+import Pagination from "../shared/Pagination";
 import styles from "./Users.module.css";
 import { getUsers, createUser, updateUser, deactivateUser, deleteUser, getUserGroups, assignUserToGroup } from "../../api";
 import { useError } from "../../context/ErrorContext";
@@ -156,7 +159,7 @@ export default function Users() {
   return (
     <div>
       <Sidebar />
-      <div className={styles.page} style={{ marginLeft: "260px" }}>
+      <div className={`${styles.page} app-page-scroll`}>
 
         {/* Header */}
         <div className={styles.header}>
@@ -191,7 +194,7 @@ export default function Users() {
 
         {/* Table */}
         {loading ? (
-          <div className={styles.loading}>Loading…</div>
+          <PageSkeleton variant="table" rows={8} />
         ) : (
           <>
             <div className={styles.tableWrap}>
@@ -210,7 +213,11 @@ export default function Users() {
                 </thead>
                 <tbody>
                   {users.length === 0 && (
-                    <tr><td colSpan={7} className={styles.empty}>No users found.</td></tr>
+                    <tr>
+                      <td colSpan={isAdmin || isManager ? 8 : 7}>
+                        <EmptyState icon="👤" title="No users found" message="Try adjusting your search or filters." compact />
+                      </td>
+                    </tr>
                   )}
                   {users.map((u) => {
                     const sc = STATUS_COLORS[u.status] ?? STATUS_COLORS.active;
@@ -237,7 +244,7 @@ export default function Users() {
                           </span>
                         </td>
                         <td>
-                          <span className={styles.badge} style={{ background: "rgba(99,102,241,0.12)", color: "#818cf8" }}>
+                          <span className={styles.badge} style={{ background: "var(--accent-light)", color: "var(--accent-text)" }}>
                             {u.group_name ?? "—"}
                           </span>
                         </td>
@@ -268,13 +275,13 @@ export default function Users() {
             </div>
 
             {/* Pagination */}
-            {totalPages > 1 && (
-              <div className={styles.pagination}>
-                <button disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>← Prev</button>
-                <span>Page {page} of {totalPages}</span>
-                <button disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>Next →</button>
-              </div>
-            )}
+            <Pagination
+              page={page}
+              totalPages={totalPages}
+              totalItems={total}
+              pageSize={LIMIT}
+              onPageChange={setPage}
+            />
           </>
         )}
 

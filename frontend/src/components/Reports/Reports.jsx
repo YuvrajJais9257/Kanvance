@@ -10,6 +10,8 @@
  */
 import { useState, useRef, useEffect } from "react";
 import Sidebar from "../sidebar/Sidebar";
+import PageSkeleton from "../shared/PageSkeleton";
+import EmptyState from "../shared/EmptyState";
 import styles from "./Reports.module.css";
 import {
   downloadTimesheetTemplate,
@@ -171,7 +173,7 @@ export default function Reports() {
   return (
     <div>
       <Sidebar />
-      <div className={styles.page} style={{ marginLeft: "260px" }}>
+      <div className={`${styles.page} app-page-scroll`}>
 
         {/* Header */}
         <div className={styles.header}>
@@ -517,9 +519,13 @@ export default function Reports() {
               <button className={styles.secondaryBtn} onClick={loadRuns}>↻ Refresh</button>
             </div>
             {runsLoading ? (
-              <div className={styles.loading}>Loading…</div>
+              <PageSkeleton variant="table" rows={5} />
             ) : runs.length === 0 ? (
-              <div className={styles.empty}>No uploads yet.</div>
+              <EmptyState
+                icon="📊"
+                title="No uploads yet"
+                message="Import a timesheet to see run history and validation results here."
+              />
             ) : (
               <div className={styles.tableWrap}>
                 <table className={styles.table}>

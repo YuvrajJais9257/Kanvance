@@ -1,7 +1,13 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useLocation } from "react-router-dom";
 import Sidebar from "../sidebar/Sidebar";
+import PageSkeleton from "../shared/PageSkeleton";
+import EmptyState from "../shared/EmptyState";
+import VirtualList from "../shared/VirtualList";
+import PageShell from "../shared/PageShell";
 import styles from "./Customers.module.css";
+
+const CUSTOMER_COLS = 3;
 import {
   getCustomers, getCustomer, createCustomer, updateCustomer,
   getContacts, createContact, deleteContact,
@@ -254,13 +260,67 @@ export default function Customers() {
   // ── Helpers ──────────────────────────────────────────────
   const f = (val) => val || <span className={styles.empty}>—</span>;
 
-  return (
-    <>
-      <div>
-      <Sidebar />
-      <div className={styles.page}>
+  const customerRows = useMemo(() => {
+    const rows = [];
+    for (let i = 0; i < customers.length; i += CUSTOMER_COLS) {
+      rows.push({
+        id: `row-${i}`,
+        items: customers.slice(i, i + CUSTOMER_COLS),
+      });
+    }
+    return rows;
+  }, [customers]);
 
-        {/* Header */}
+  const renderCustomerCard = (c) => (
+    <div
+      key={c.id}
+      className={styles.card}
+      onClick={() => openDrawer(c.id)}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          openDrawer(c.id);
+        }
+      }}
+      aria-label={`Open customer ${c.name}`}
+    >
+      <div className={styles.cardHeader}>
+        <div className={styles.customerInitial}>{c.name[0].toUpperCase()}</div>
+        <div className={styles.cardMeta}>
+          <div className={styles.customerName}>{c.name}</div>
+          <div className={styles.industry}>{c.industry || "—"}</div>
+        </div>
+        {c.license_type && <span className={styles.licenseTag}>{c.license_type}</span>}
+      </div>
+      <div className={styles.cardStats}>
+        <div className={styles.stat}>
+          <span className={styles.statValue}>{c.license_count ?? "—"}</span>
+          <span className={styles.statLabel}>Licenses</span>
+        </div>
+        <div className={styles.stat}>
+          <span className={styles.statValue}>
+            {c.license_expiry
+              ? new Date(c.license_expiry).toLocaleDateString("en-GB", {
+                  day: "2-digit",
+                  month: "short",
+                  year: "numeric",
+                })
+              : "—"}
+          </span>
+          <span className={styles.statLabel}>Expiry</span>
+        </div>
+      </div>
+    </div>
+  );
+
+  return (
+    <div>
+      <Sidebar />
+      <PageShell
+        className={styles.page}
+        chrome={
         <div className={styles.header}>
           <div>
             <h1 className={styles.title}>Customers</h1>
@@ -270,59 +330,31 @@ export default function Customers() {
             + Add Customer
           </button>
         </div>
-
-        {/* Customer Grid */}
+        }
+      >
         {loading ? (
-          <div className={styles.loading}>Loading…</div>
+          <PageSkeleton variant="grid" rows={6} />
         ) : customers.length === 0 ? (
-          <div className={styles.empty}>No customers yet. Add one to get started.</div>
+          <EmptyState
+            icon="🏢"
+            title="No customers yet"
+            message="Add your first organisation to start tracking projects and engagements."
+          />
         ) : (
-          <div className={styles.grid}>
-            {customers.map((c) => (
-              <div
-                key={c.id}
-                className={styles.card}
-                onClick={() => openDrawer(c.id)}
-                role="button"
-                tabIndex={0}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    e.preventDefault();
-                    openDrawer(c.id);
-                  }
-                }}
-                aria-label={`Open customer ${c.name}`}
-              >
-                <div className={styles.cardHeader}>
-                  <div className={styles.customerInitial}>
-                    {c.name[0].toUpperCase()}
-                  </div>
-                  <div className={styles.cardMeta}>
-                    <div className={styles.customerName}>{c.name}</div>
-                    <div className={styles.industry}>{c.industry || "—"}</div>
-                  </div>
-                  {c.license_type && (
-                    <span className={styles.licenseTag}>{c.license_type}</span>
-                  )}
-                </div>
-                <div className={styles.cardStats}>
-                  <div className={styles.stat}>
-                    <span className={styles.statValue}>{c.license_count ?? "—"}</span>
-                    <span className={styles.statLabel}>Licenses</span>
-                  </div>
-                  <div className={styles.stat}>
-                    <span className={styles.statValue}>
-                      {c.license_expiry
-                        ? new Date(c.license_expiry).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })
-                        : "—"}
-                    </span>
-                    <span className={styles.statLabel}>Expiry</span>
-                  </div>
-                </div>
+          <VirtualList
+            items={customerRows}
+            className={styles.gridViewport}
+            remeasureDep={customers.length}
+            estimateSize={() => 172}
+            getItemKey={(row) => row.id}
+            renderItem={(row) => (
+              <div className={styles.gridRow}>
+                {row.items.map(renderCustomerCard)}
               </div>
-            ))}
-          </div>
+            )}
+          />
         )}
+      </PageShell>
 
         {/* ── Drawer ─────────────────────────────────────── */}
         {(selected || drawerLoading) && (
@@ -352,7 +384,7 @@ export default function Customers() {
               )}
 
               {drawerLoading ? (
-                <div className={styles.loading}>Loading…</div>
+                <PageSkeleton variant="list" rows={4} />
               ) : (
                 <div className={styles.drawerBody}>
                   {/* Tabs */}
@@ -480,7 +512,7 @@ export default function Customers() {
                           })}
                         </div>
                       ) : (
-                        <div className={styles.emptyState}>No projects for this customer yet.</div>
+                        <EmptyState icon="📁" message="No projects for this customer yet." compact />
                       )}
                     </>
                   )}
@@ -491,7 +523,7 @@ export default function Customers() {
                       <p className={styles.sectionTitle}>Contacts</p>
                       <div className={styles.itemList}>
                         {contacts.length === 0 && (
-                          <div className={styles.emptyState}>No contacts added yet.</div>
+                          <EmptyState icon="📇" message="No contacts added yet." compact />
                         )}
                         {contacts.map((c) => (
                           <div key={c.id} className={styles.item}>
@@ -532,7 +564,7 @@ export default function Customers() {
                       <p className={styles.sectionTitle}>Documents</p>
                       <div className={styles.itemList}>
                         {documents.length === 0 && (
-                          <div className={styles.emptyState}>No documents added yet.</div>
+                          <EmptyState icon="📄" message="No documents added yet." compact />
                         )}
                         {documents.map((d) => (
                           <div key={d.id} className={styles.item}>
@@ -642,7 +674,7 @@ export default function Customers() {
                       <p className={styles.sectionTitle}>Infrastructure Servers</p>
                       <div className={styles.itemList}>
                         {infra.length === 0 && (
-                          <div className={styles.emptyState}>No servers added yet.</div>
+                          <EmptyState icon="🖥️" message="No servers added yet." compact />
                         )}
                         {infra.map((s) => (
                           <div key={s.id} className={styles.item}>
@@ -752,19 +784,16 @@ export default function Customers() {
             </div>
           </div>
         )}
-      </div>
-    </div>
 
-    {/* ── Hard Delete Customer Modal (admin-only) ─────────── */}
-    {deleteModal && (
-      <DeleteConfirmModal
-        entityType="customer"
-        entityName={deleteModal.name}
-        description={`This will permanently delete the customer "${deleteModal.name}", ALL their projects, phases, tasks, subtasks, contacts, documents, and infrastructure records. This cannot be undone.`}
-        onConfirm={handleHardDeleteCustomer}
-        onClose={() => setDeleteModal(null)}
-      />
-    )}
-    </>
+      {deleteModal && (
+        <DeleteConfirmModal
+          entityType="customer"
+          entityName={deleteModal.name}
+          description={`This will permanently delete the customer "${deleteModal.name}", ALL their projects, phases, tasks, subtasks, contacts, documents, and infrastructure records. This cannot be undone.`}
+          onConfirm={handleHardDeleteCustomer}
+          onClose={() => setDeleteModal(null)}
+        />
+      )}
+    </div>
   );
 }

@@ -21,6 +21,12 @@ const todayLabel = new Intl.DateTimeFormat("en-US", {
   weekday: "short", day: "2-digit", month: "short", year: "numeric",
 }).format(new Date());
 
+// Safe date formatter — handles strings, Date objects, and null/undefined
+function formatDate(val) {
+  if (!val) return null;
+  return new Date(val).toISOString().split("T")[0];
+}
+
 // F-3 fix: compute urgency dates inside the component render, not at module load time
 function getUrgencyDates() {
   const now = new Date();
@@ -33,7 +39,8 @@ function urgencyClass(task, styles) {
   if (task.status === "Done") return "";
   if (!task.due_date) return "";
   const { todayStr, in7Days } = getUrgencyDates();
-  const d = task.due_date.split("T")[0];
+  const d = formatDate(task.due_date);
+  if (!d) return "";
   if (d < todayStr)  return styles.overdue;
   if (d <= in7Days)  return styles.dueSoon;
   return "";
@@ -81,13 +88,27 @@ export default function MyTasks() {
   }, [canViewAll, user]);
 
   // Load tasks when member changes
+  // — clear stale tasks immediately so the previous user's data never bleeds through
+  // — use a cancellation token to discard responses from superseded fetches
   useEffect(() => {
     if (!selectedMember) return;
+    let cancelled = false;
+
+    setTasks([]);       // clear immediately — never show stale data
     setLoading(true);
+
     getMyTasks(selectedMember.id)
-      .then(setTasks)
-      .catch((err) => showError(err.message))
-      .finally(() => setLoading(false));
+      .then((data) => {
+        if (!cancelled) setTasks(data);
+      })
+      .catch((err) => {
+        if (!cancelled) showError(err.message);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => { cancelled = true; }; // discard if user switches before fetch completes
   }, [selectedMember]);
 
   const grouped = groupByProject(tasks);
@@ -178,7 +199,7 @@ export default function MyTasks() {
                   {proj.tasks.map((task) => {
                     const sc    = STATUS_COLOR[task.status] ?? "#6b7280";
                     const urg   = urgencyClass(task, styles);
-                    const dStr  = task.due_date ? task.due_date.split("T")[0] : null;
+                    const dStr  = formatDate(task.due_date);
 
                     return (
                       <div key={task.subtask_id} className={`${styles.taskRow} ${urg}`}>

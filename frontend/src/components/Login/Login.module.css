@@ -1,23 +1,23 @@
+/* ── Login Page ──────────────────────────────────────────────── */
 .page {
   min-height: 100vh;
-  background: #0b0f16;
+  background: var(--bg-base);
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 20px;
-  font-family: 'DM Sans', 'Inter', sans-serif;
 }
 
 .card {
   width: min(420px, 100%);
-  background: #111723;
-  border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 20px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xl);
   padding: 40px 36px;
-  box-shadow: 0 32px 80px rgba(0,0,0,0.5);
+  box-shadow: var(--shadow-modal);
 }
 
-/* ── Logo ─────────────────────────────────────────────────── */
+/* ── Logo ── */
 .logo {
   display: flex;
   flex-direction: column;
@@ -26,49 +26,52 @@
 }
 
 .logoText {
-  font-size: 22px;
+  font-size: 1.375rem;
   font-weight: 800;
-  letter-spacing: 2px;
-  color: #4f83ff;
+  letter-spacing: 2.5px;
+  background: var(--gradient-accent);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .logoSub {
-  font-size: 12px;
-  color: #475569;
+  font-size: 0.75rem;
+  color: var(--text-muted);
   letter-spacing: 0.5px;
   margin-top: 4px;
   font-family: "SFMono-Regular", Consolas, monospace;
 }
 
-/* ── Heading ─────────────────────────────────────────────── */
+/* ── Heading ── */
 .title {
   margin: 0 0 6px;
-  font-size: 24px;
+  font-size: 1.375rem;
   font-weight: 700;
-  color: #f1f5f9;
+  color: var(--text-heading);
   text-align: center;
 }
 
 .subtitle {
   margin: 0 0 28px;
-  font-size: 14px;
-  color: #64748b;
+  font-size: 0.875rem;
+  color: var(--text-muted);
   text-align: center;
 }
 
-/* ── Error banner ────────────────────────────────────────── */
+/* ── Error banner ── */
 .errorBanner {
-  background: rgba(248,113,113,0.1);
-  border: 1px solid rgba(248,113,113,0.3);
-  border-radius: 8px;
-  color: #f87171;
-  font-size: 13px;
+  background: var(--danger-light);
+  border: 1px solid var(--danger-border);
+  border-radius: var(--radius-md);
+  color: var(--danger-text);
+  font-size: 0.8125rem;
   padding: 10px 14px;
   margin-bottom: 20px;
   text-align: center;
 }
 
-/* ── Form ────────────────────────────────────────────────── */
+/* ── Form ── */
 .form {
   display: flex;
   flex-direction: column;
@@ -82,53 +85,55 @@
 }
 
 .field label {
-  font-size: 13px;
+  font-size: 0.6875rem;
   font-weight: 600;
-  color: #64748b;
+  color: var(--text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
 }
 
 .field input {
   height: 44px;
-  border-radius: 10px;
-  background: #1a2030;
-  border: 1px solid rgba(255,255,255,0.08);
-  color: #e6ebf5;
-  font-size: 15px;
+  border-radius: var(--radius-md);
+  background: var(--bg-input);
+  border: 1px solid var(--border-default);
+  color: var(--text-primary);
+  font-size: 0.9375rem;
   padding: 0 14px;
   outline: none;
-  transition: border-color 0.15s;
+  transition: var(--transition-fast);
 }
 
 .field input:focus {
-  border-color: #3b82f6;
+  border-color: var(--accent);
+  box-shadow: var(--shadow-focus);
 }
 
 .field input::placeholder {
-  color: #334155;
+  color: var(--text-muted);
 }
 
-/* ── Submit button ───────────────────────────────────────── */
+/* ── Submit button ── */
 .submitBtn {
   height: 46px;
   border: none;
-  border-radius: 12px;
-  background: linear-gradient(180deg, #67a0ff 0%, #4a86f7 100%);
-  color: #fff;
-  font-size: 15px;
+  border-radius: var(--radius-md);
+  background: var(--gradient-accent);
+  color: var(--white);
+  font-size: 0.9375rem;
   font-weight: 700;
   cursor: pointer;
   margin-top: 6px;
-  transition: filter 0.15s, opacity 0.15s;
-  box-shadow: 0 8px 24px rgba(74,134,247,0.25);
+  transition: var(--transition);
+  box-shadow: 0 6px 20px var(--accent-glow);
 }
 
 .submitBtn:hover:not(:disabled) {
-  filter: brightness(1.08);
+  filter: brightness(1.1);
+  box-shadow: 0 8px 28px var(--accent-glow);
 }
 
 .submitBtn:disabled {
-  opacity: 0.6;
+  opacity: 0.55;
   cursor: not-allowed;
 }

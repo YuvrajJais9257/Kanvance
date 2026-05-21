@@ -1,9 +1,14 @@
+/* ── Notifications Page ──────────────────────────────────────── */
 .page {
-  margin-left: 220px;
+  margin-left: 260px;
   padding: 32px 40px;
   min-height: 100vh;
-  background: #0a0f1e;
-  color: #f1f5f9;
+  background: var(--bg-base);
+  color: var(--text-primary);
+}
+
+@media (max-width: 900px) {
+  .page { margin-left: 0; padding: 24px 20px; }
 }
 
 .header {
@@ -12,70 +17,80 @@
   justify-content: space-between;
   margin-bottom: 24px;
 }
+
 .title {
-  font-size: 24px;
+  font-size: 1.25rem;
   font-weight: 700;
-  color: #f1f5f9;
+  color: var(--text-heading);
   margin: 0 0 4px;
 }
+
 .subtitle {
-  font-size: 13px;
-  color: #64748b;
+  font-size: 0.8125rem;
+  color: var(--text-muted);
   margin: 0;
 }
 
 .markAllBtn {
-  background: rgba(99,102,241,0.12);
-  border: 1px solid rgba(99,102,241,0.3);
-  border-radius: 8px;
-  color: #818cf8;
-  font-size: 13px;
+  background: var(--accent-light);
+  border: 1px solid var(--accent-border);
+  border-radius: var(--radius-md);
+  color: var(--accent-text);
+  font-size: 0.8125rem;
   font-weight: 500;
   padding: 8px 16px;
   cursor: pointer;
-  transition: background 0.15s;
+  transition: var(--transition-fast);
 }
-.markAllBtn:hover { background: rgba(99,102,241,0.2); }
+
+.markAllBtn:hover { background: rgba(99, 102, 241, 0.25); }
 .markAllBtn:disabled { opacity: 0.5; cursor: not-allowed; }
 
+/* ── Tabs ── */
 .tabs {
   display: flex;
-  gap: 4px;
+  gap: 2px;
   margin-bottom: 20px;
-  border-bottom: 1px solid #1e293b;
+  border-bottom: 1px solid var(--border-subtle);
   padding-bottom: 0;
 }
+
 .tab {
   background: none;
   border: none;
   border-bottom: 2px solid transparent;
-  color: #64748b;
-  font-size: 13px;
+  color: var(--text-muted);
+  font-size: 0.8125rem;
   font-weight: 500;
   padding: 8px 16px;
   cursor: pointer;
-  transition: color 0.15s, border-color 0.15s;
+  transition: var(--transition-fast);
   margin-bottom: -1px;
 }
-.tab:hover { color: #94a3b8; }
+
+.tab:hover { color: var(--text-secondary); }
+
 .tabActive {
-  color: #6366f1;
-  border-bottom-color: #6366f1;
+  color: var(--accent-text);
+  border-bottom-color: var(--accent);
+  font-weight: 600;
 }
 
 .loading {
   padding: 40px;
   text-align: center;
-  color: #64748b;
-  font-size: 14px;
+  color: var(--text-muted);
+  font-size: 0.875rem;
 }
+
 .empty {
   padding: 60px 40px;
   text-align: center;
-  color: #64748b;
-  font-size: 14px;
+  color: var(--text-muted);
+  font-size: 0.875rem;
 }
 
+/* ── Notification list ── */
 .list {
   display: flex;
   flex-direction: column;
@@ -87,14 +102,23 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
-  background: #0f172a;
-  border: 1px solid #1e293b;
-  border-radius: 10px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
   padding: 14px 16px;
-  transition: background 0.1s;
+  transition: var(--transition-fast);
 }
-.item:hover { background: #1a2540; }
-.unread { background: #0f172a; }
+
+.item:hover {
+  background: var(--bg-hover);
+  border-color: var(--border-default);
+}
+
+.unread {
+  background: var(--bg-surface);
+  border-left: 3px solid var(--accent);
+}
+
 .unread .projectName { font-weight: 600; }
 
 .itemLeft {
@@ -106,32 +130,36 @@
 }
 
 .urgencyBadge {
-  font-size: 10px;
+  font-size: 0.625rem;
   font-weight: 700;
   padding: 3px 8px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   white-space: nowrap;
   flex-shrink: 0;
   margin-top: 2px;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
 }
 
 .itemBody { flex: 1; min-width: 0; }
+
 .projectName {
-  font-size: 14px;
-  color: #e2e8f0;
+  font-size: 0.875rem;
+  color: var(--text-primary);
   margin-bottom: 4px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
 .customerName {
-  color: #64748b;
+  color: var(--text-muted);
   font-weight: 400;
 }
+
 .message {
-  font-size: 13px;
-  color: #94a3b8;
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
   line-height: 1.4;
 }
 
@@ -142,29 +170,34 @@
   gap: 8px;
   flex-shrink: 0;
 }
+
 .timestamp {
-  font-size: 11px;
-  color: #475569;
+  font-size: 0.6875rem;
+  color: var(--text-muted);
   white-space: nowrap;
-}
-.readBtn {
-  background: rgba(74,222,128,0.1);
-  border: 1px solid rgba(74,222,128,0.25);
-  border-radius: 6px;
-  color: #4ade80;
-  font-size: 11px;
-  font-weight: 500;
-  padding: 3px 10px;
-  cursor: pointer;
-  transition: background 0.15s;
-  white-space: nowrap;
-}
-.readBtn:hover { background: rgba(74,222,128,0.2); }
-.readLabel {
-  font-size: 11px;
-  color: #334155;
 }
 
+.readBtn {
+  background: var(--success-light);
+  border: 1px solid var(--success-border);
+  border-radius: var(--radius-sm);
+  color: var(--success-text);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  padding: 3px 10px;
+  cursor: pointer;
+  transition: var(--transition-fast);
+  white-space: nowrap;
+}
+
+.readBtn:hover { background: rgba(16, 185, 129, 0.22); }
+
+.readLabel {
+  font-size: 0.6875rem;
+  color: var(--text-muted);
+}
+
+/* ── Pagination ── */
 .pagination {
   display: flex;
   align-items: center;
@@ -172,18 +205,25 @@
   gap: 16px;
   margin-top: 24px;
   padding-top: 16px;
-  border-top: 1px solid #1e293b;
+  border-top: 1px solid var(--border-subtle);
 }
+
 .pageBtn {
-  background: #1e293b;
-  border: 1px solid #334155;
-  border-radius: 8px;
-  color: #94a3b8;
-  font-size: 13px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  font-size: 0.8125rem;
   padding: 6px 16px;
   cursor: pointer;
-  transition: background 0.15s, color 0.15s;
+  transition: var(--transition-fast);
 }
-.pageBtn:hover:not(:disabled) { background: #334155; color: #f1f5f9; }
+
+.pageBtn:hover:not(:disabled) {
+  background: var(--accent-light);
+  border-color: var(--accent-border);
+  color: var(--accent-text);
+}
+
 .pageBtn:disabled { opacity: 0.4; cursor: not-allowed; }
-.pageInfo { font-size: 13px; color: #64748b; }
+.pageInfo { font-size: 0.8125rem; color: var(--text-muted); }

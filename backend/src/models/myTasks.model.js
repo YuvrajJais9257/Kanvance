@@ -97,13 +97,20 @@ exports.getByMember = async (memberId, requestingUserId, requestingRole) => {
   }
 
   // Sort: overdue → due soon → not done → done
+  // Belt-and-suspenders date normaliser — handles strings (dateStrings:true)
+  // and JS Date objects equally, so toggling dateStrings never breaks sorting.
+  const toDateStr = (val) => {
+    if (!val) return null;
+    return typeof val === "string" ? val.split("T")[0] : new Date(val).toISOString().split("T")[0];
+  };
+
   rows.sort((a, b) => {
     const today = new Date().toISOString().split("T")[0];
     const in7   = new Date(Date.now() + 7 * 86400000).toISOString().split("T")[0];
 
     const score = (r) => {
       if (r.status === "Done") return 4;
-      const d = r.due_date ? r.due_date.split("T")[0] : null;
+      const d = toDateStr(r.due_date);
       if (d && d < today) return 0;
       if (d && d <= in7)  return 1;
       if (!d)             return 2;
@@ -112,7 +119,9 @@ exports.getByMember = async (memberId, requestingUserId, requestingRole) => {
 
     const diff = score(a) - score(b);
     if (diff !== 0) return diff;
-    if (a.due_date && b.due_date) return a.due_date.localeCompare(b.due_date);
+    const da = toDateStr(a.due_date);
+    const db = toDateStr(b.due_date);
+    if (da && db) return da.localeCompare(db);
     return 0;
   });
 

@@ -1,13 +1,99 @@
-/* Global base styles (kept intentionally small, app uses CSS Modules) */
+/* ═══════════════════════════════════════════════════════════════
+   KANVANCE — Global Design System
+   All colors, radii, shadows, and transitions go through variables.
+   No hardcoded hex values in component files.
+   ═══════════════════════════════════════════════════════════════ */
+
 :root {
   color-scheme: dark;
+
+  /* ── Background layers (darkest → lightest) ── */
+  --bg-base:     #080c14;   /* page background */
+  --bg-surface:  #0f1420;   /* cards, sidebar */
+  --bg-elevated: #161d2e;   /* modals, dropdowns, expanded rows */
+  --bg-hover:    #1a2236;   /* hover state on surface items */
+  --bg-input:    #0b1019;   /* form inputs (darker than card) */
+
+  /* ── Borders ── */
+  --border-subtle:  rgba(255, 255, 255, 0.06);
+  --border-default: rgba(255, 255, 255, 0.09);
+  --border-strong:  rgba(255, 255, 255, 0.14);
+
+  /* ── Text ── */
+  --text-primary:  #e8edf5;
+  --text-secondary: #94a3b8;
+  --text-muted:    #546278;
+  --text-heading:  #f4f7fc;
+
+  /* ── Primary accent — Indigo/Violet ── */
+  --accent:         #6366f1;
+  --accent-hover:   #4f46e5;
+  --accent-light:   rgba(99, 102, 241, 0.15);
+  --accent-glow:    rgba(99, 102, 241, 0.25);
+  --accent-text:    #818cf8;
+  --accent-border:  rgba(99, 102, 241, 0.35);
+
+  /* ── Success — Emerald ── */
+  --success:        #10b981;
+  --success-light:  rgba(16, 185, 129, 0.14);
+  --success-text:   #34d399;
+  --success-border: rgba(16, 185, 129, 0.3);
+
+  /* ── Warning — Amber ── */
+  --warning:        #f59e0b;
+  --warning-light:  rgba(245, 158, 11, 0.14);
+  --warning-text:   #fbbf24;
+  --warning-border: rgba(245, 158, 11, 0.3);
+
+  /* ── Danger — Rose ── */
+  --danger:         #f43f5e;
+  --danger-hover:   #e11d48;
+  --danger-light:   rgba(244, 63, 94, 0.14);
+  --danger-text:    #fb7185;
+  --danger-border:  rgba(244, 63, 94, 0.35);
+
+  /* ── Info / Blue (legacy brand color kept for avatars etc.) ── */
+  --blue:           #3b82f6;
+  --blue-light:     rgba(59, 130, 246, 0.14);
+  --blue-text:      #60a5fa;
+
+  /* ── Utility ── */
+  --white:          #ffffff;
+  --danger-soft:    #fca5a5;   /* light rose — text on danger bg */
+  --accent-soft:    #a5b4fc;   /* light indigo — hover tints */
+  --violet-soft:    #a78bfa;   /* light violet — type pill text */
+
+  /* ── Gradients ── */
+  --gradient-accent:  linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  --gradient-success: linear-gradient(90deg, #10b981 0%, #34d399 100%);
+  --gradient-bar:     linear-gradient(90deg, #6366f1 0%, #8b5cf6 100%);
+  --gradient-avatar:  linear-gradient(135deg, #1e2d55 0%, #2c3f72 100%);
+
+  /* ── Shadows ── */
+  --shadow-card:    0 4px 16px rgba(0, 0, 0, 0.35), 0 1px 4px rgba(0, 0, 0, 0.2);
+  --shadow-hover:   0 8px 28px rgba(0, 0, 0, 0.45), 0 0 0 1px var(--accent-border);
+  --shadow-modal:   0 24px 64px rgba(0, 0, 0, 0.65), 0 0 0 1px var(--border-subtle);
+  --shadow-focus:   0 0 0 3px var(--accent-glow);
+  --shadow-dropdown: 0 8px 32px rgba(0, 0, 0, 0.6), 0 0 0 1px var(--border-default);
+
+  /* ── Border radii ── */
+  --radius-sm:   6px;   /* badges, chips */
+  --radius-md:   8px;   /* inputs, buttons */
+  --radius-lg:   12px;  /* cards */
+  --radius-xl:   16px;  /* large cards, modals */
+  --radius-full: 9999px;
+
+  /* ── Transitions ── */
+  --transition: all 0.2s ease;
+  --transition-fast: all 0.15s ease;
 }
 
+/* ── Reset ── */
 * {
   padding: 0;
   margin: 0;
   box-sizing: border-box;
-  font-family: 'DM Sans', sans-serif;
+  font-family: 'Inter', 'Segoe UI', sans-serif;
 }
 
 html {
@@ -15,9 +101,12 @@ html {
 }
 
 body {
-  background: #0b0f16;
-  color: #e2e8f0;
-  line-height: 1.4;
+  background: var(--bg-base);
+  color: var(--text-primary);
+  line-height: 1.5;
+  font-size: 0.875rem;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 button,
@@ -31,8 +120,25 @@ a {
   color: inherit;
 }
 
-/* Accessible focus ring for keyboard users */
+/* ── Scrollbar ── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-full);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+/* ── Focus ring ── */
 :focus-visible {
-  outline: 2px solid #67a0ff;
-  outline-offset: 2px;
+  outline: none;
+  box-shadow: var(--shadow-focus);
+  border-radius: var(--radius-md);
 }

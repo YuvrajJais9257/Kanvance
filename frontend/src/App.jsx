@@ -36,16 +36,16 @@ function App() {
               <ProtectedRoute><MyTasks /></ProtectedRoute>
             } />
             <Route path="/users" element={
-              <ProtectedRoute><Users /></ProtectedRoute>
+              <ProtectedRoute requiredRole="MANAGER"><Users /></ProtectedRoute>
             } />
             <Route path="/access" element={
-              <ProtectedRoute><AccessManagement /></ProtectedRoute>
+              <ProtectedRoute requiredRole="ADMIN"><AccessManagement /></ProtectedRoute>
             } />
             <Route path="/reports" element={
-              <ProtectedRoute><Reports /></ProtectedRoute>
+              <ProtectedRoute requiredRole="MANAGER"><Reports /></ProtectedRoute>
             } />
             <Route path="/analytics" element={
-              <ProtectedRoute><Analytics /></ProtectedRoute>
+              <ProtectedRoute requiredRole="ADMIN"><Analytics /></ProtectedRoute>
             } />
             <Route path="/notifications" element={
               <ProtectedRoute><NotificationsPage /></ProtectedRoute>

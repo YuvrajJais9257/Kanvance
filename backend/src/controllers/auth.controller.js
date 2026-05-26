@@ -68,9 +68,10 @@ exports.login = async (req, res, next) => {
     }
 
     // Store minimal user info in session
-    req.session.userId   = user.id;
-    req.session.userName = user.name;
-    req.session.userRole = user.role;
+    req.session.userId      = user.id;
+    req.session.userName    = user.name;
+    req.session.userRole    = user.role;
+    req.session.roleVersion = user.role_version ?? 1;
 
     // Get user's group privilege level
     let privilegeLevel = "MEMBER"; // default

@@ -23,6 +23,8 @@ const upload = multer({
 
 router.get("/template",          ctrl.downloadTemplate);
 router.post("/upload",           upload.single("file"), ctrl.upload);
+router.post("/validate",         ctrl.validateRows);                    // Phase 2: row-level validation (no DB writes)
+router.post("/import",           upload.single("file"), ctrl.importFile); // Phase 2: full partial-import pipeline
 router.post("/enrich",           ctrl.enrich);
 router.post("/sync",             ctrl.sync);
 router.post("/export",           ctrl.exportExcel);

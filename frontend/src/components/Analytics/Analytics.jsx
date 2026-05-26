@@ -77,7 +77,16 @@ const TABS = ["Overview", "Projects", "Team", "Blocked Tasks"];
 export default function Analytics() {
   const { showError } = useError();
   const { user }      = useAuth();
-  const isMember      = user?.role === "MEMBER";
+
+  // Effective role = highest of user's own role and their group's privilege_level
+  const ROLE_RANK = { MEMBER: 1, MANAGER: 2, ADMIN: 3, MASTER_ADMIN: 4 };
+  const effectiveRole = (() => {
+    const userRank  = ROLE_RANK[user?.role]                  ?? 1;
+    const groupRank = ROLE_RANK[user?.group_privilege_level] ?? 1;
+    return userRank >= groupRank ? (user?.role ?? "MEMBER") : user?.group_privilege_level;
+  })();
+  // isMember = true only when effective role is below ADMIN (data is filtered server-side too)
+  const isMember = (ROLE_RANK[effectiveRole] ?? 1) < ROLE_RANK.ADMIN;
   const [activeTab, setActiveTab] = useState("Overview");
   const [loading,   setLoading]   = useState(true);
 

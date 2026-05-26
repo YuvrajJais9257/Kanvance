@@ -172,10 +172,12 @@ exports.enrichRows = async (parsedRows) => {
   const enriched = [];
 
   for (const row of parsedRows) {
-    // Match project (case-insensitive, partial)
+    // Match project (case-insensitive, partial) — only used to resolve project_id.
+    // project_name always comes strictly from the current row; never from a previous
+    // upload or from the DB canonical name, to prevent stale-name bleed-through.
     const matchedProject = _matchProject(row.project_name, projects);
     const project_id     = matchedProject?.id ?? null;
-    const project_name   = matchedProject?.project_name ?? row.project_name;
+    const project_name   = String(row.project_name ?? "").trim() || null;
 
     // Match subtask (by task name + subtask name within matched project)
     const matchedSubtask = project_id
@@ -419,7 +421,10 @@ function _matchSubtask(taskName, subtaskName, subtasks, projectId) {
  *   - validRows:     rows that can be saved (employee resolved, required fields present)
  *   - rejectedRows:  rows rejected due to permission (MEMBER uploading for another user)
  *   - newRows:       validRows with no existing time_logs entry
- *   - conflictRows:  validRows that would overwrite an existing entry
+ *   - conflictRows:  validRows that would UPDATE an existing entry
+ *
+ * Match key: (employee_id, project_name, activity_group, subtask_name, date)
+ * On match  → UPDATE hours, status, notes only (employee/project never overwritten).
  *
  * @param {Array}  enrichedRows  — output of enrichRows()
  * @param {object} uploader      — { userId, userRole, userName }
@@ -462,16 +467,18 @@ exports.previewConflicts = async (enrichedRows, uploader) => {
     validRows.push({
       ...row,
       employee_id:    user.id,
-      activity_group: row.task_name ?? "",
+      activity_group: row.task_name    ?? "",
+      subtask_name:   row.subtask_name ?? "",
     });
   }
 
-  // Find conflicts in one batch query
+  // Find conflicts in one batch query using the 5-column natural key
   const conflictMap = await TimeLogModel.findConflicts(
     validRows.map((r) => ({
       employee_id:    r.employee_id,
-      project_name:   r.project_name ?? "",
+      project_name:   r.project_name   ?? "",
       activity_group: r.activity_group ?? "",
+      subtask_name:   r.subtask_name   ?? "",
       date:           r.logged_date,
     }))
   );
@@ -480,7 +487,7 @@ exports.previewConflicts = async (enrichedRows, uploader) => {
   const conflictRows = [];
 
   for (const row of validRows) {
-    const key = `${row.employee_id}|${row.project_name ?? ""}|${row.activity_group ?? ""}|${row.logged_date}`;
+    const key = `${row.employee_id}|${row.project_name ?? ""}|${row.activity_group ?? ""}|${row.subtask_name ?? ""}|${row.logged_date}`;
     const conflict = conflictMap.get(key);
     if (conflict) {
       conflictRows.push({ ...row, existing_hours: conflict.existing_hours, existing_source: conflict.existing_source });
@@ -490,24 +497,28 @@ exports.previewConflicts = async (enrichedRows, uploader) => {
   }
 
   return {
-    total:         enrichedRows.length,
-    valid:         validRows.length,
-    new_count:     newRows.length,
+    total:          enrichedRows.length,
+    valid:          validRows.length,
+    new_count:      newRows.length,
     conflict_count: conflictRows.length,
     rejected_count: rejectedRows.length,
-    new_rows:      newRows,
-    conflict_rows: conflictRows,
-    rejected_rows: rejectedRows,
+    new_rows:       newRows,
+    conflict_rows:  conflictRows,
+    rejected_rows:  rejectedRows,
   };
 };
 
 // ── 7. Commit enriched rows to time_logs (after user confirms) ────────────
 /**
  * Upserts all valid rows (new + conflicts) into time_logs.
+ *
+ * Match key: (employee_id, project_name, activity_group, subtask_name, date)
+ * On match  → UPDATE hours, status, notes only.
+ * No match  → INSERT new record.
  * Rejected rows are never written.
  *
  * @param {object} preview  — output of previewConflicts()
- * @returns {Promise<{inserted, updated, rejected}>}
+ * @returns {Promise<{inserted, updated, rejected, skipped}>}
  */
 exports.commitToTimeLogs = async (preview) => {
   const TimeLogModel = require("../models/timeLog.model");
@@ -517,10 +528,13 @@ exports.commitToTimeLogs = async (preview) => {
     ...preview.conflict_rows,
   ].map((r) => ({
     employee_id:    r.employee_id,
-    project_name:   r.project_name ?? "",
+    project_name:   r.project_name   ?? "",
     activity_group: r.activity_group ?? "",
+    subtask_name:   r.subtask_name   ?? "",
     date:           r.logged_date,
     hours:          r.hours_final,
+    status:         r.status_final   ?? null,
+    notes:          r.notes          ?? null,
   }));
 
   const { inserted, updated } = await TimeLogModel.upsertExcelBatch(rowsToSave);
@@ -529,5 +543,293 @@ exports.commitToTimeLogs = async (preview) => {
     inserted,
     updated,
     rejected: preview.rejected_count,
+    skipped:  0, // in-batch duplicates are caught by validateRows before this stage
   };
 };
+
+// ── 8. Row-level validation ───────────────────────────────────────────────
+/**
+ * Validates each parsed row independently. Invalid rows are rejected with a
+ * human-readable reason; valid rows in the same file still succeed (partial
+ * import is allowed).
+ *
+ * Checks (in order):
+ *   1. DATE        — parseable and produces a valid calendar date
+ *   2. EMPLOYEE    — non-empty, exists in users table (case-insensitive)
+ *   3. OWNERSHIP   — uploader must match the row's employee unless the
+ *                    uploader holds ADMIN or MASTER_ADMIN role
+ *   4. PROJECT     — non-empty
+ *   5. HOURS       — numeric, > 0, ≤ 24
+ *   6. STATUS      — one of the allowed values
+ *   7. DUPLICATE   — same (employee + project + task + subtask + date) within
+ *                    this upload batch; second occurrence is skipped
+ *
+ * @param {Array}  parsedRows  — output of parseUpload()
+ * @param {object} [uploader]  — { userId, userRole, userName }
+ *                               When omitted the ownership check is skipped
+ *                               (backwards-compatible for internal callers).
+ * @returns {Promise<{results: Array, created_count: number, rejected_count: number}>}
+ *   Each element of `results` is either:
+ *     { row, status: "valid",    data: <row object> }
+ *     { row, status: "rejected", reason: <string>  }
+ */
+const VALID_STATUSES = new Set([
+  "done",
+  "in progress",
+  "not started",
+  "blocked",
+  "in testing",
+]);
+
+/** Roles that may upload rows on behalf of any employee. */
+const PRIVILEGED_ROLES = new Set(["ADMIN", "MASTER_ADMIN"]);
+
+exports.validateRows = async (parsedRows, uploader = null) => {
+  // Pre-load all active users once (avoid N+1 per row)
+  const [dbUsers] = await pool.execute(
+    `SELECT id, name FROM users WHERE deleted_at IS NULL`
+  );
+  const userMap = new Map(
+    dbUsers.map((u) => [u.name.toLowerCase().trim(), u])
+  );
+
+  const results       = [];
+  let   created_count = 0;
+  let   rejected_count = 0;
+
+  // Duplicate-detection set: key = "employee|project|task|subtask|date"
+  const seenKeys = new Map(); // key → first row_num
+
+  for (const row of parsedRows) {
+    const rowNum = row.row_num;
+
+    // ── 1. Date ────────────────────────────────────────────────────────
+    const rawDate = row.logged_date; // already normalised by parseUpload
+    if (!rawDate || !_isValidDate(rawDate)) {
+      results.push({ row: rowNum, status: "rejected", reason: `Invalid or missing date "${row.logged_date ?? ""}"` });
+      rejected_count++;
+      continue;
+    }
+
+    // ── 2. Employee ────────────────────────────────────────────────────
+    const employeeTrimmed = (row.employee ?? "").trim();
+    if (!employeeTrimmed) {
+      results.push({ row: rowNum, status: "rejected", reason: "Missing employee name" });
+      rejected_count++;
+      continue;
+    }
+    const matchedUser = userMap.get(employeeTrimmed.toLowerCase());
+    if (!matchedUser) {
+      results.push({ row: rowNum, status: "rejected", reason: `Employee "${employeeTrimmed}" not found in system` });
+      rejected_count++;
+      continue;
+    }
+
+    // ── 3. Ownership — uploader must match the row's employee ─────────
+    // ADMIN / MASTER_ADMIN may upload for anyone; all other roles are
+    // restricted to their own rows.
+    if (uploader) {
+      const uploaderRole = (uploader.userRole ?? "").toUpperCase();
+      if (!PRIVILEGED_ROLES.has(uploaderRole)) {
+        const uploaderName = (uploader.userName ?? "").trim().toLowerCase();
+        if (uploaderName !== employeeTrimmed.toLowerCase()) {
+          results.push({
+            row:    rowNum,
+            status: "rejected",
+            reason: `EMPLOYEE NAME '${employeeTrimmed}' does not match authenticated user '${uploader.userName}'`,
+          });
+          rejected_count++;
+          continue;
+        }
+      }
+    }
+
+    // ── 4. Project ─────────────────────────────────────────────────────
+    const projectTrimmed = (row.project_name ?? "").trim();
+    if (!projectTrimmed) {
+      results.push({ row: rowNum, status: "rejected", reason: "Missing project name" });
+      rejected_count++;
+      continue;
+    }
+
+    // ── 5. Hours ───────────────────────────────────────────────────────
+    const hours = row.hours_uploaded;
+    if (hours === null || hours === undefined || hours === "") {
+      results.push({ row: rowNum, status: "rejected", reason: "Missing hours" });
+      rejected_count++;
+      continue;
+    }
+    const hoursNum = Number(hours);
+    if (isNaN(hoursNum)) {
+      results.push({ row: rowNum, status: "rejected", reason: `Hours "${hours}" is not a number` });
+      rejected_count++;
+      continue;
+    }
+    if (hoursNum <= 0) {
+      results.push({ row: rowNum, status: "rejected", reason: `Hours ${hoursNum} must be greater than 0` });
+      rejected_count++;
+      continue;
+    }
+    if (hoursNum > 24) {
+      results.push({ row: rowNum, status: "rejected", reason: `Hours ${hoursNum} exceeds maximum of 24` });
+      rejected_count++;
+      continue;
+    }
+
+    // ── 6. Status ──────────────────────────────────────────────────────
+    const statusRaw = (row.status_uploaded ?? "").trim();
+    if (statusRaw && !VALID_STATUSES.has(statusRaw.toLowerCase())) {
+      results.push({
+        row: rowNum,
+        status: "rejected",
+        reason: `Invalid status "${statusRaw}". Allowed: Done, In Progress, Not Started, Blocked, In Testing`,
+      });
+      rejected_count++;
+      continue;
+    }
+
+    // ── 7. Duplicate within this upload ───────────────────────────────
+    const dupKey = [
+      employeeTrimmed.toLowerCase(),
+      projectTrimmed.toLowerCase(),
+      (row.task_name    ?? "").trim().toLowerCase(),
+      (row.subtask_name ?? "").trim().toLowerCase(),
+      rawDate,
+    ].join("|");
+
+    if (seenKeys.has(dupKey)) {
+      const firstRow = seenKeys.get(dupKey);
+      results.push({ row: rowNum, status: "rejected", reason: `Duplicate of row ${firstRow}` });
+      rejected_count++;
+      continue;
+    }
+    seenKeys.set(dupKey, rowNum);
+
+    // ── All checks passed ──────────────────────────────────────────────
+    results.push({
+      row:    rowNum,
+      status: "valid",
+      data:   {
+        ...row,
+        employee:     employeeTrimmed,
+        employee_id:  matchedUser.id,
+        project_name: projectTrimmed,
+        hours_final:  hoursNum,
+        status_final: statusRaw || "Not Started",
+        logged_date:  rawDate,
+      },
+    });
+    created_count++;
+  }
+
+  return { results, created_count, rejected_count };
+};
+
+// ── 9. Partial import loop ────────────────────────────────────────────────
+/**
+ * Full single-call import pipeline:
+ *   parseUpload → validateRows → enrich valid rows → commit to time_logs
+ *
+ * Invalid rows are collected and returned; they never block valid rows.
+ * In-batch duplicates (same natural key appearing twice in the file) are
+ * counted as "skipped" — the first occurrence wins.
+ *
+ * @param {Buffer} fileBuffer   — raw .xlsx buffer from multer
+ * @param {object} uploader     — { userId, userRole, userName }
+ * @param {string} filename     — original filename (for audit run)
+ * @returns {Promise<object>}   — { run_id, results, summary }
+ */
+exports.importRows = async (fileBuffer, uploader, filename) => {
+  // Step 1 — parse
+  const parsed = await exports.parseUpload(fileBuffer);
+
+  // Step 2 — validate (row-level, partial-import aware)
+  // validateRows already deduplicates within the batch (seenKeys map).
+  // Rows that are duplicates of an earlier row in the same file get
+  // status "rejected" with reason "Duplicate of row N" — we surface
+  // those as "skipped" in the summary.
+  const { results, created_count, rejected_count } = await exports.validateRows(parsed, uploader);
+
+  // Separate in-batch duplicates from hard rejections
+  const skippedResults  = results.filter((r) => r.status === "rejected" && r.reason?.startsWith("Duplicate of row"));
+  const rejectedResults = results.filter((r) => r.status === "rejected" && !r.reason?.startsWith("Duplicate of row"));
+  const skipped_count   = skippedResults.length;
+  const hard_rejected   = rejectedResults.length;
+
+  // Step 3 — enrich only the valid rows
+  const validRows = results.filter((r) => r.status === "valid").map((r) => r.data);
+  const enriched  = validRows.length ? await exports.enrichRows(validRows) : [];
+
+  // Step 4 — permission check + conflict detection
+  const preview = enriched.length
+    ? await exports.previewConflicts(enriched, uploader)
+    : { new_rows: [], conflict_rows: [], rejected_rows: [], rejected_count: 0 };
+
+  // Step 5 — commit to time_logs
+  const { inserted, updated } = enriched.length
+    ? await exports.commitToTimeLogs(preview)
+    : { inserted: 0, updated: 0 };
+
+  // Step 6 — audit run record
+  const runId = await TimesheetRunModel.createRun({
+    uploaded_by: uploader.userId ?? null,
+    filename:    filename || "timesheet_import.xlsx",
+    row_count:   parsed.length,
+    status:      "processed",
+  });
+  if (enriched.length) {
+    await TimesheetRunModel.insertRows(runId, enriched);
+  }
+
+  // Merge permission-rejected rows from previewConflicts back into results
+  for (const r of preview.rejected_rows) {
+    results.push({
+      row:    r.row_num,
+      status: "rejected",
+      reason: r.reject_reason ?? "Permission denied or missing fields",
+    });
+  }
+
+  // Build per-row output
+  const finalResults = results.map((r) => {
+    if (r.status !== "valid") return { row: r.row, status: "rejected", reason: r.reason };
+    return { row: r.row, status: "created" };
+  });
+
+  // Build rejected_rows detail list for the summary UI
+  const rejectedRowDetails = [
+    ...rejectedResults.map((r) => ({ row: r.row, reason: r.reason })),
+    ...preview.rejected_rows.map((r) => ({ row: r.row_num, reason: r.reject_reason })),
+  ];
+
+  return {
+    run_id:  runId,
+    results: finalResults,
+    summary: {
+      total:         parsed.length,
+      created:       inserted,
+      updated,
+      rejected:      hard_rejected + (preview.rejected_count ?? 0),
+      skipped:       skipped_count,
+      inserted,
+      rejected_rows: rejectedRowDetails,
+    },
+  };
+};
+
+// ── Helpers (private) ─────────────────────────────────────────────────────
+/**
+ * Returns true only if `dateStr` is a valid YYYY-MM-DD calendar date.
+ * Rejects strings that parse to NaN or produce an invalid calendar date
+ * (e.g. 2026-02-30).
+ */
+function _isValidDate(dateStr) {
+  if (!dateStr) return false;
+  // Must be YYYY-MM-DD after normalisation
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return false;
+  const d = new Date(dateStr + "T00:00:00Z");
+  if (isNaN(d.getTime())) return false;
+  // Guard against JS silently rolling over (e.g. Feb 30 → Mar 2)
+  const [y, m, day] = dateStr.split("-").map(Number);
+  return d.getUTCFullYear() === y && d.getUTCMonth() + 1 === m && d.getUTCDate() === day;
+}

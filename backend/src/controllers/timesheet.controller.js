@@ -77,6 +77,51 @@ exports.exportExcel = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
+// POST /api/timesheet/validate  body: { rows: [...] }
+// Validates parsed rows without writing anything to the DB.
+// Returns per-row pass/fail results so the UI can show a preview before committing.
+exports.validateRows = async (req, res, next) => {
+  try {
+    const { rows } = req.body;
+    if (!Array.isArray(rows) || !rows.length) {
+      return res.status(400).json({ error: "rows array is required" });
+    }
+
+    // Forward the authenticated user so ownership checks apply in preview too.
+    const uploader = {
+      userId:   req.session?.userId   ?? null,
+      userRole: req.session?.userRole ?? "MEMBER",
+      userName: req.session?.userName ?? "",
+    };
+
+    const result = await TimesheetService.validateRows(rows, uploader);
+    res.json(result);
+  } catch (err) { next(err); }
+};
+
+// POST /api/timesheet/import  (multipart — field: "file")
+// Full single-call pipeline: parse → validate → enrich → commit.
+// Partial import: invalid rows are rejected, valid rows are saved.
+exports.importFile = async (req, res, next) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: "No file uploaded" });
+
+    const uploader = {
+      userId:   req.session?.userId   ?? null,
+      userRole: req.session?.userRole ?? "MEMBER",
+      userName: req.session?.userName ?? "",
+    };
+
+    const result = await TimesheetService.importRows(
+      req.file.buffer,
+      uploader,
+      req.file.originalname
+    );
+
+    res.json(result);
+  } catch (err) { next(err); }
+};
+
 // GET /api/timesheet/runs
 exports.listRuns = async (req, res, next) => {
   try {

@@ -8,7 +8,6 @@ import { getUsers, createUser, updateUser, deactivateUser, deleteUser, getUserGr
 import { useError } from "../../context/ErrorContext";
 import { useAuth } from "../../context/AuthContext";
 
-const ROLES    = ["ADMIN", "LEAD", "MANAGER", "MEMBER"];
 const STATUSES = ["active", "inactive", "disabled"];
 
 const STATUS_COLORS = {
@@ -18,23 +17,29 @@ const STATUS_COLORS = {
 };
 
 const ROLE_COLORS = {
-  ADMIN:   { bg: "rgba(167,139,250,0.12)", color: "#a78bfa" },
-  LEAD:    { bg: "rgba(236,72,153,0.12)",  color: "#ec4899" },
-  MANAGER: { bg: "rgba(59,130,246,0.12)",  color: "#3b82f6" },
-  MEMBER:  { bg: "rgba(100,116,139,0.12)", color: "#64748b" },
+  ADMIN:        { bg: "rgba(167,139,250,0.12)", color: "#a78bfa" },
+  MASTER_ADMIN: { bg: "rgba(239,68,68,0.12)",   color: "#ef4444" },
+  MANAGER:      { bg: "rgba(59,130,246,0.12)",  color: "#3b82f6" },
+  MEMBER:       { bg: "rgba(100,116,139,0.12)", color: "#64748b" },
 };
 
 const blankForm = {
   name: "", username: "", full_name: "", email: "",
-  password: "", role: "MEMBER", status: "active", group_id: "",
+  password: "", status: "active", group_id: "",
 };
 
 export default function Users() {
   const { showError } = useError();
   const { user: me }  = useAuth();
 
-  const isAdmin   = me?.role === "ADMIN";
-  const isManager = me?.role === "MANAGER";
+  // Use effective role (highest of user's own role and their group's privilege_level)
+  const ROLE_RANK = { MEMBER: 1, MANAGER: 2, ADMIN: 3, MASTER_ADMIN: 4 };
+  const effectiveRoleRank = Math.max(
+    ROLE_RANK[me?.role]                  ?? 1,
+    ROLE_RANK[me?.group_privilege_level] ?? 1
+  );
+  const isAdmin   = effectiveRoleRank >= ROLE_RANK.ADMIN;
+  const isManager = effectiveRoleRank >= ROLE_RANK.MANAGER;
 
   // ── List state ──────────────────────────────────────────────
   const [users,   setUsers]   = useState([]);
@@ -99,7 +104,6 @@ export default function Users() {
       full_name: u.full_name ?? "",
       email:     u.email     ?? "",
       password:  "",
-      role:      u.role      ?? "MEMBER",
       status:    u.status    ?? "active",
       group_id:  u.group_id  ?? "",
     });
@@ -117,11 +121,13 @@ export default function Users() {
     setSaving(true);
     try {
       if (modal === "create") {
+        // role is derived from group on the backend — don't send it
         await createUser(form);
       } else {
         const patch = { ...form };
         if (!patch.password) delete patch.password; // don't send empty password
-        // Handle group change via assign endpoint
+        delete patch.role;     // role is controlled by group, not editable directly
+        // Handle group change via assign endpoint (also syncs role on backend)
         if (patch.group_id && patch.group_id !== editing.group_id) {
           await assignUserToGroup(patch.group_id, editing.id);
         }
@@ -183,7 +189,10 @@ export default function Users() {
           <select className={styles.select} value={filterRole}
             onChange={(e) => { setFilterRole(e.target.value); setPage(1); }}>
             <option value="">All roles</option>
-            {ROLES.map((r) => <option key={r}>{r}</option>)}
+            <option value="MASTER_ADMIN">Master Admin</option>
+            <option value="ADMIN">Admin</option>
+            <option value="MANAGER">Manager</option>
+            <option value="MEMBER">Member</option>
           </select>
           <select className={styles.select} value={filterStatus}
             onChange={(e) => { setFilterStatus(e.target.value); setPage(1); }}>
@@ -330,12 +339,6 @@ export default function Users() {
                 {isAdmin && (
                   <div className={styles.formRow}>
                     <div className={styles.field}>
-                      <label>Role</label>
-                      <select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })}>
-                        {ROLES.map((r) => <option key={r}>{r}</option>)}
-                      </select>
-                    </div>
-                    <div className={styles.field}>
                       <label>Status</label>
                       <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}>
                         {STATUSES.map((s) => <option key={s}>{s}</option>)}
@@ -358,9 +361,23 @@ export default function Users() {
                         </option>
                       ))}
                     </select>
-                    {modal === "create" && (
+                    {/* Show the access level the selected group will grant */}
+                    {form.group_id && (() => {
+                      const selectedGroup = groups.find((g) => g.id === Number(form.group_id));
+                      const level = selectedGroup?.privilege_level;
+                      const c = ROLE_COLORS[level] ?? ROLE_COLORS.MEMBER;
+                      return (
+                        <small style={{ marginTop: "6px", display: "flex", alignItems: "center", gap: "6px" }}>
+                          <span>Access level:</span>
+                          <span style={{ background: c.bg, color: c.color, padding: "1px 8px", borderRadius: "4px", fontWeight: 600, fontSize: "11px" }}>
+                            {level}
+                          </span>
+                        </small>
+                      );
+                    })()}
+                    {modal === "create" && !form.group_id && (
                       <small style={{ color: "#64748b", marginTop: "4px", display: "block" }}>
-                        Every user must belong to a group. Groups control access privileges.
+                        Every user must belong to a group. The group determines their access level.
                       </small>
                     )}
                   </div>

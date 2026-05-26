@@ -414,11 +414,19 @@ exports.commitTimeLogs = async (req, res, next) => {
 
     const result = await TimesheetService.commitToTimeLogs(preview);
 
+    // Build rejected_rows detail list from the preview's rejected_rows
+    const rejectedRowDetails = (preview.rejected_rows ?? []).map((r) => ({
+      row:    r.row_num,
+      reason: r.reject_reason ?? "Rejected",
+    }));
+
     res.json({
-      message:  `Imported ${result.inserted + result.updated} rows — ${result.inserted} new, ${result.updated} overwritten, ${result.rejected} rejected`,
-      inserted: result.inserted,
-      updated:  result.updated,
-      rejected: result.rejected,
+      message:       `Import complete — ${result.inserted} created, ${result.updated} updated, ${result.rejected} rejected`,
+      created:       result.inserted,
+      updated:       result.updated,
+      rejected:      result.rejected,
+      skipped:       result.skipped ?? 0,
+      rejected_rows: rejectedRowDetails,
     });
   } catch (err) {
     next(err);

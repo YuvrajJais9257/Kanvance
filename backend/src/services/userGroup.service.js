@@ -4,6 +4,7 @@
  * Business logic for user access groups.
  */
 const UserGroupModel = require("../models/userGroup.model");
+const UserModel      = require("../models/user.model");
 
 const VALID_PRIVILEGE_LEVELS = ["MASTER_ADMIN", "ADMIN", "MANAGER", "MEMBER"];
 
@@ -63,6 +64,13 @@ exports.update = async (id, data) => {
     privilege_level: data.privilege_level,
     description:     data.description,
   });
+
+  // If privilege_level changed, sync role on all members and bump role_version
+  // so their active sessions pick up the new privilege level immediately.
+  if (data.privilege_level && data.privilege_level !== existing.privilege_level) {
+    await UserGroupModel.syncAllMembersRole(id, data.privilege_level);
+  }
+
   return UserGroupModel.getById(id);
 };
 
@@ -80,5 +88,10 @@ exports.assignUser = async (userId, groupId) => {
   const group = await UserGroupModel.getById(groupId);
   if (!group) throw notFound();
   await UserGroupModel.assignUser(userId, groupId);
+  // Sync the user's role to match the group's privilege_level — group is the
+  // single source of truth for access level. Also bumps role_version so the
+  // active session picks up the change on the very next request.
+  await UserModel.update(userId, { role: group.privilege_level });
+  await UserModel.bumpRoleVersion(userId);
   return { assigned: true };
 };

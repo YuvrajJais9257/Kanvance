@@ -1,21 +1,19 @@
 /**
  * requireAdmin middleware
- * Restricts access to admin-only routes
- * Returns 403 if user is not an admin
+ * Restricts access to admin-only routes.
+ * Uses effective role (highest of user role + group privilege_level).
+ * Returns 403 if effective role is below ADMIN.
  */
+const { getEffectiveRole } = require("./requireRole");
+
+const ADMIN_ROLES = new Set(["ADMIN", "MASTER_ADMIN"]);
+
 module.exports = (req, res, next) => {
-  const userRole = req.session.userRole;
-  const privilegeLevel = req.session.privilegeLevel;
+  const effectiveRole = getEffectiveRole(req.session ?? {});
 
-  // Check both role and privilege_level for admin access
-  const isAdmin = 
-    userRole === 'ADMIN' || 
-    privilegeLevel === 'ADMIN' || 
-    privilegeLevel === 'MASTER_ADMIN';
-
-  if (!isAdmin) {
-    return res.status(403).json({ 
-      error: "Admin access required. This action is restricted to administrators only." 
+  if (!ADMIN_ROLES.has(effectiveRole)) {
+    return res.status(403).json({
+      error: "Admin access required. This action is restricted to administrators only.",
     });
   }
 

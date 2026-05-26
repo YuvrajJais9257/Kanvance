@@ -32,7 +32,14 @@ export default function AccessManagement() {
   const { showError } = useError();
   const { user: me }  = useAuth();
 
-  const isAdmin = me?.role === "ADMIN";
+  // Effective role = highest of user's own role and their group's privilege_level
+  const ROLE_RANK = { MEMBER: 1, MANAGER: 2, ADMIN: 3, MASTER_ADMIN: 4 };
+  const effectiveRole = (() => {
+    const userRank  = ROLE_RANK[me?.role]                  ?? 1;
+    const groupRank = ROLE_RANK[me?.group_privilege_level] ?? 1;
+    return userRank >= groupRank ? (me?.role ?? "MEMBER") : me?.group_privilege_level;
+  })();
+  const isAdmin = (ROLE_RANK[effectiveRole] ?? 1) >= ROLE_RANK.ADMIN;
 
   const [groups,         setGroups]         = useState([]);
   const [loading,        setLoading]        = useState(true);

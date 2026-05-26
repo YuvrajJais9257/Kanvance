@@ -116,6 +116,7 @@ function StatusBadge({ status, onSelect }) {
         tabIndex={0}
         aria-haspopup="listbox"
         aria-expanded={open}
+        aria-label={`Status: ${status}. Click to change.`}
         onKeyDown={(e) => {
           if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openDropdown(); }
           if (e.key === "Escape") setOpen(false);
@@ -152,19 +153,28 @@ function StatusBadge({ status, onSelect }) {
   );
 }
 
-// ── Assignee Chip (position:fixed dropdown to escape overflow:hidden) ──────────
+// ── Assignee Chip (position:fixed dropdown; bottom-sheet on mobile) ───────────
 function AssigneeChip({ assigneeId, assigneeName, inherited, team, onSelect }) {
   const [open, setOpen] = useState(false);
   const [dropPos, setDropPos] = useState({ top: 0, left: 0 });
   const chipRef = useRef(null);
+  // Stable unique ID for aria-describedby — lazy useState so it never changes
+  const [tooltipId] = useState(() => `assignee-tip-${Math.random().toString(36).slice(2)}`);
+
+  const isMobile = () => window.innerWidth <= 640;
 
   const openDropdown = () => {
-    if (chipRef.current) {
+    if (!isMobile() && chipRef.current) {
       const r = chipRef.current.getBoundingClientRect();
+      const dropWidth = 260;
       const spaceBelow = window.innerHeight - r.bottom;
-      const dropHeight = Math.min(team.length * 40 + 20, 280);
+      const dropHeight = Math.min(team.length * 40 + 60, 300);
       const top = spaceBelow > dropHeight ? r.bottom + 4 : r.top - dropHeight - 4;
-      const left = Math.max(4, r.left - 70);
+      // Align right edge of dropdown to right edge of chip, clamped to viewport
+      const left = Math.min(
+        Math.max(4, r.right - dropWidth),
+        window.innerWidth - dropWidth - 8
+      );
       setDropPos({ top, left });
     }
     setOpen((o) => !o);
@@ -179,17 +189,28 @@ function AssigneeChip({ assigneeId, assigneeName, inherited, team, onSelect }) {
     return () => document.removeEventListener("mousedown", handler);
   }, [open]);
 
+  // Close on Escape key globally when open
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e) => { if (e.key === "Escape") setOpen(false); };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [open]);
+
   const initials = assigneeName ? assigneeName[0].toUpperCase() : "+";
-  const title = inherited
-    ? `${assigneeName} (project owner — no explicit assignee)`
-    : (assigneeName ?? "Assign");
+  const ariaLabel = inherited
+    ? `${assigneeName} (project owner — no explicit assignee). Click to assign.`
+    : (assigneeName ? `Assigned to ${assigneeName}. Click to change.` : "Unassigned. Click to assign.");
 
   return (
     <div className={styles.assigneeWrap} onClick={(e) => e.stopPropagation()}>
       <span
         ref={chipRef}
         className={`${styles.assigneeChip} ${!assigneeName ? styles.assigneeChipEmpty : ""} ${inherited ? styles.assigneeChipInherited : ""}`}
-        title={title}
+        aria-label={ariaLabel}
+        aria-describedby={inherited ? tooltipId : undefined}
+        aria-haspopup="listbox"
+        aria-expanded={open}
         onClick={openDropdown}
         role="button"
         tabIndex={0}
@@ -200,13 +221,27 @@ function AssigneeChip({ assigneeId, assigneeName, inherited, team, onSelect }) {
       >
         {initials}
       </span>
+      {/* Mobile overlay — dims background and closes on tap */}
+      {open && isMobile() && (
+        <div
+          className={styles.assigneeOverlay}
+          onMouseDown={() => setOpen(false)}
+          aria-hidden="true"
+        />
+      )}
       {open && (
         <div
           className={styles.assigneeDropdown}
-          style={{ top: dropPos.top, left: dropPos.left }}
+          style={isMobile() ? {} : { top: dropPos.top, left: dropPos.left }}
+          role="listbox"
+          aria-label="Assign to"
         >
           {inherited && (
-            <div className={styles.assigneeInheritedNote}>
+            <div
+              id={tooltipId}
+              className={styles.assigneeInheritedNote}
+              role="tooltip"
+            >
               Inherited from project owner. Click a name to assign explicitly.
             </div>
           )}
@@ -216,6 +251,7 @@ function AssigneeChip({ assigneeId, assigneeName, inherited, team, onSelect }) {
               className={`${styles.assigneeOption} ${m.id === assigneeId ? styles.assigneeOptionActive : ""}`}
               onMouseDown={(e) => { e.preventDefault(); onSelect(m.id); setOpen(false); }}
               role="option"
+              aria-selected={m.id === assigneeId}
               tabIndex={0}
               onKeyDown={(e) => {
                 if (e.key === "Enter" || e.key === " ") {
@@ -232,6 +268,7 @@ function AssigneeChip({ assigneeId, assigneeName, inherited, team, onSelect }) {
               className={`${styles.assigneeOption} ${styles.unassignOption}`}
               onMouseDown={(e) => { e.preventDefault(); onSelect(null); setOpen(false); }}
               role="option"
+              aria-selected={false}
               tabIndex={0}
               onKeyDown={(e) => {
                 if (e.key === "Enter" || e.key === " ") {

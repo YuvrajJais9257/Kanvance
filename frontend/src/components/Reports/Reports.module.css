@@ -534,3 +534,141 @@
 }
 
 .dangerBtn:hover { background: var(--danger-light); }
+
+/* ── Inline import summary banner ── */
+.importSummary {
+  margin-top: 24px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-left: 4px solid var(--success-text);
+  border-radius: var(--radius-lg);
+  padding: 20px 24px;
+  box-shadow: var(--shadow-card);
+  animation: slideDown 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.importSummaryHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.importSummaryTitle {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-heading);
+}
+
+.importSummaryDismiss {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 1rem;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  line-height: 1;
+  transition: var(--transition-fast);
+}
+.importSummaryDismiss:hover { background: var(--bg-hover); color: var(--text-primary); }
+
+.importSummaryStats {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.importStat {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 10px 16px;
+  min-width: 140px;
+}
+
+.importStatIcon {
+  font-size: 0.875rem;
+  font-weight: 700;
+  width: 16px;
+  text-align: center;
+}
+
+.importStatNum {
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.importStatLabel {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+/* Colour variants */
+.importStatCreated .importStatIcon,
+.importStatCreated .importStatNum { color: var(--success-text); }
+
+.importStatUpdated .importStatIcon,
+.importStatUpdated .importStatNum { color: var(--warning-text); }
+
+.importStatRejected .importStatIcon,
+.importStatRejected .importStatNum { color: var(--danger-text); }
+
+.importStatSkipped .importStatIcon,
+.importStatSkipped .importStatNum { color: var(--text-muted); }
+
+/* Rejected rows detail list */
+.importRejectedList {
+  background: var(--danger-light);
+  border: 1px solid var(--danger-border);
+  border-radius: var(--radius-md);
+  padding: 12px 16px;
+  margin-bottom: 16px;
+}
+
+.importRejectedTitle {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--danger-text);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin: 0 0 8px;
+}
+
+.importRejectedRow {
+  display: flex;
+  gap: 8px;
+  font-size: 0.8125rem;
+  padding: 3px 0;
+  border-top: 1px solid var(--danger-border);
+}
+
+.importRejectedRow:first-of-type { border-top: none; }
+
+.importRejectedRowNum {
+  font-weight: 700;
+  color: var(--danger-text);
+  white-space: nowrap;
+  min-width: 56px;
+}
+
+.importRejectedReason {
+  color: var(--text-secondary);
+}
+
+.importSummaryActions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}

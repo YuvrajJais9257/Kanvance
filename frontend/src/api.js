@@ -183,9 +183,23 @@ export const exportTimesheet      = (rows, filename) => {
 };
 export const saveTimesheetHours    = (rows)         => USE_API ? post("/api/reports/save-hours", { rows }) : Promise.resolve({ inserted: 0, skipped: 0 });
 export const previewTimeLogs       = (rows)         => USE_API ? post("/api/reports/preview-time-logs", { rows }) : Promise.resolve({ total: 0, new_count: 0, conflict_count: 0, rejected_count: 0, new_rows: [], conflict_rows: [], rejected_rows: [] });
-export const commitTimeLogs        = (preview)      => USE_API ? post("/api/reports/commit-time-logs", { preview }) : Promise.resolve({ inserted: 0, updated: 0, rejected: 0 });
+export const commitTimeLogs        = (preview)      => USE_API ? post("/api/reports/commit-time-logs", { preview }) : Promise.resolve({ created: 0, updated: 0, rejected: 0, skipped: 0, rejected_rows: [] });
 export const getTimesheetRuns     = ()             => USE_API ? get("/api/timesheet/runs")                        : Promise.resolve([]);
 export const getTimesheetRunRows  = (id)           => USE_API ? get(`/api/timesheet/runs/${id}/rows`)             : Promise.resolve([]);
+
+// Single-shot import pipeline (parse → validate → enrich → commit in one call)
+export const importTimesheetFile = (formData) => {
+  if (!USE_API) return Promise.resolve({ summary: { created: 0, updated: 0, rejected: 0, skipped: 0, rejected_rows: [] } });
+  return fetch(`${BASE}/api/timesheet/import`, {
+    method: "POST",
+    credentials: "include",
+    body: formData,
+  }).then(async (res) => {
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+    return data;
+  });
+};
 
 // ── Analytics ─────────────────────────────────────────────────
 export const getAnalyticsSummary       = ()        => USE_API ? get("/api/analytics/summary")          : Promise.resolve({});

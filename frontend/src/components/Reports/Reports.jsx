@@ -82,15 +82,23 @@ export default function Reports() {
   const handleFileChange = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    // Clear ALL import state before parsing a new file — never carry over
+    // rows, enriched data, preview, or import results from a previous upload.
+    setParsedRows([]);
+    setEnrichedRows([]);
+    setPreviewData(null);
+    setImportResult(null);
+
     setUploadedFile(file.name);
     setUploading(true);
     try {
       const fd = new FormData();
       fd.append("file", file);
       const result = await uploadTimesheetFile(fd);
+      // project_name in each row comes strictly from the uploaded file's cells —
+      // never from a previous upload or any cached value.
       setParsedRows(result.rows);
-      setEnrichedRows([]);
-      setPreviewData(null);
       setStep(2);
     } catch (err) {
       showError(err.message);
@@ -133,7 +141,15 @@ export default function Reports() {
     setCommitting(true);
     try {
       const result = await commitTimeLogs(previewData);
-      setImportResult(result);
+      // Normalise field names — API returns created/updated/rejected/skipped/rejected_rows
+      setImportResult({
+        created:       result.created       ?? result.inserted ?? 0,
+        updated:       result.updated       ?? 0,
+        rejected:      result.rejected      ?? 0,
+        skipped:       result.skipped       ?? 0,
+        rejected_rows: result.rejected_rows ?? [],
+        message:       result.message       ?? "",
+      });
       setPreviewData(null); // clear preview after commit
     } catch (err) {
       showError(err.message);
@@ -560,40 +576,69 @@ export default function Reports() {
             )}
           </div>
         )}
-      </div>
 
-      {/* ── Post-import summary modal ──────────────────────────────────── */}
+      {/* ── Post-import summary — inline banner (shown after save) ──────── */}
       {importResult && (
-        <div className={styles.summaryOverlay} onClick={() => setImportResult(null)}>
-          <div className={styles.summaryModal} onClick={(e) => e.stopPropagation()}>
-            <div className={styles.summaryIcon}>✅</div>
-            <h2 className={styles.summaryTitle}>Import Complete</h2>
-            <p className={styles.summaryMsg}>{importResult.message}</p>
-            <div className={styles.summaryStats}>
-              <div className={styles.summaryStatCard}>
-                <span className={`${styles.summaryStatNum} ${styles.numNew}`}>{importResult.inserted}</span>
-                <span className={styles.summaryStatLabel}>New</span>
-              </div>
-              <div className={styles.summaryStatCard}>
-                <span className={`${styles.summaryStatNum} ${styles.numOverwrite}`}>{importResult.updated}</span>
-                <span className={styles.summaryStatLabel}>Overwritten</span>
-              </div>
-              <div className={styles.summaryStatCard}>
-                <span className={`${styles.summaryStatNum} ${styles.numRejected}`}>{importResult.rejected}</span>
-                <span className={styles.summaryStatLabel}>Rejected</span>
-              </div>
+        <div className={styles.importSummary}>
+          <div className={styles.importSummaryHeader}>
+            <span className={styles.importSummaryTitle}>✅ Import complete</span>
+            <button
+              className={styles.importSummaryDismiss}
+              onClick={() => setImportResult(null)}
+              aria-label="Dismiss"
+            >✕</button>
+          </div>
+
+          <div className={styles.importSummaryStats}>
+            <div className={`${styles.importStat} ${styles.importStatCreated}`}>
+              <span className={styles.importStatIcon}>✓</span>
+              <span className={styles.importStatNum}>{importResult.created}</span>
+              <span className={styles.importStatLabel}>rows created</span>
             </div>
-            <div style={{ display: "flex", gap: "12px", justifyContent: "center" }}>
-              <button className={styles.primaryBtn} onClick={() => setImportResult(null)}>
-                Done
-              </button>
-              <button className={styles.ghostBtn} onClick={handleReset}>
-                Start New Upload
-              </button>
+            <div className={`${styles.importStat} ${styles.importStatUpdated}`}>
+              <span className={styles.importStatIcon}>✓</span>
+              <span className={styles.importStatNum}>{importResult.updated}</span>
+              <span className={styles.importStatLabel}>rows updated</span>
             </div>
+            <div className={`${styles.importStat} ${styles.importStatRejected}`}>
+              <span className={styles.importStatIcon}>✗</span>
+              <span className={styles.importStatNum}>{importResult.rejected}</span>
+              <span className={styles.importStatLabel}>rows rejected</span>
+            </div>
+            {importResult.skipped > 0 && (
+              <div className={`${styles.importStat} ${styles.importStatSkipped}`}>
+                <span className={styles.importStatIcon}>—</span>
+                <span className={styles.importStatNum}>{importResult.skipped}</span>
+                <span className={styles.importStatLabel}>
+                  {importResult.skipped === 1 ? "row skipped (duplicate)" : "rows skipped (duplicates)"}
+                </span>
+              </div>
+            )}
+          </div>
+
+          {importResult.rejected_rows?.length > 0 && (
+            <div className={styles.importRejectedList}>
+              <p className={styles.importRejectedTitle}>Rejected rows:</p>
+              {importResult.rejected_rows.map((r, i) => (
+                <div key={i} className={styles.importRejectedRow}>
+                  <span className={styles.importRejectedRowNum}>Row {r.row}:</span>
+                  <span className={styles.importRejectedReason}>{r.reason}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div className={styles.importSummaryActions}>
+            <button className={styles.ghostBtn} onClick={handleReset}>
+              Start New Upload
+            </button>
+            <button className={styles.secondaryBtn} onClick={() => setImportResult(null)}>
+              Dismiss
+            </button>
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 }

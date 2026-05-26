@@ -6,6 +6,9 @@
  * Role checks are applied per-route via requireRole middleware.
  */
 const UserService = require("../services/user.service");
+const { getEffectiveRole } = require("../middlewares/requireRole");
+
+const ROLE_RANK = { MEMBER: 1, MANAGER: 2, ADMIN: 3, MASTER_ADMIN: 4 };
 
 // GET /api/users?page=&limit=&search=&role=&status=
 exports.getAll = async (req, res, next) => {
@@ -19,9 +22,9 @@ exports.getAll = async (req, res, next) => {
 // GET /api/users/:id
 exports.getById = async (req, res, next) => {
   try {
-    // MEMBER can only view their own profile; ADMIN/LEAD/MANAGER can view any
-    const role = req.session.userRole ?? "MEMBER";
-    if (role === "MEMBER" && Number(req.params.id) !== Number(req.session.userId)) {
+    // Below-ADMIN roles can only view their own profile
+    const effectiveRole = getEffectiveRole(req.session);
+    if ((ROLE_RANK[effectiveRole] ?? 1) < ROLE_RANK.ADMIN && Number(req.params.id) !== Number(req.session.userId)) {
       return res.status(403).json({ error: "Forbidden — you can only view your own profile" });
     }
     res.json(await UserService.getById(req.params.id));
@@ -39,17 +42,18 @@ exports.create = async (req, res, next) => {
 // PATCH /api/users/:id  (ADMIN full, MANAGER own profile, MEMBER own profile)
 exports.update = async (req, res, next) => {
   try {
-    const role      = req.session.userRole ?? "MEMBER";
-    const targetId  = Number(req.params.id);
-    const sessionId = Number(req.session.userId);
+    const effectiveRole = getEffectiveRole(req.session);
+    const isAdmin       = (ROLE_RANK[effectiveRole] ?? 1) >= ROLE_RANK.ADMIN;
+    const targetId      = Number(req.params.id);
+    const sessionId     = Number(req.session.userId);
 
     // Non-admins can only edit themselves
-    if (role !== "ADMIN" && targetId !== sessionId) {
+    if (!isAdmin && targetId !== sessionId) {
       return res.status(403).json({ error: "Forbidden — you can only edit your own profile" });
     }
 
-    // Only ADMIN can change role or status
-    if (role !== "ADMIN") {
+    // Only ADMIN (effective) can change role or status
+    if (!isAdmin) {
       delete req.body.role;
       delete req.body.status;
     }

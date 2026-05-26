@@ -104,3 +104,30 @@ exports.nameExists = async (name, excludeId = null) => {
   const [[row]] = await pool.execute(sql, params);
   return !!row;
 };
+
+// ── Bump role_version for every member of a group ─────────────
+// Called when a group's privilege_level changes so all active sessions
+// for members of that group are re-hydrated on their next request.
+exports.bumpAllMembersRoleVersion = async (groupId) => {
+  await pool.execute(
+    `UPDATE users
+     SET role_version    = role_version + 1,
+         role_changed_at = NOW()
+     WHERE group_id = ? AND deleted_at IS NULL`,
+    [groupId]
+  );
+};
+
+// ── Sync role for every member of a group ─────────────────────
+// Called when a group's privilege_level changes so all members'
+// role column is kept in sync with the group's privilege_level.
+exports.syncAllMembersRole = async (groupId, role) => {
+  await pool.execute(
+    `UPDATE users
+     SET role            = ?,
+         role_version    = role_version + 1,
+         role_changed_at = NOW()
+     WHERE group_id = ? AND deleted_at IS NULL`,
+    [role, groupId]
+  );
+};

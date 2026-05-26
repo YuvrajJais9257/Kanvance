@@ -47,21 +47,38 @@ const Sidebar = () => {
     }
   };
 
+  // Effective role = highest of user's own role and their group's privilege_level
+  const ROLE_RANK = { MEMBER: 1, MANAGER: 2, ADMIN: 3, MASTER_ADMIN: 4 };
+  const effectiveRole = (() => {
+    const userRank  = ROLE_RANK[user?.role]                  ?? 1;
+    const groupRank = ROLE_RANK[user?.group_privilege_level] ?? 1;
+    return userRank >= groupRank ? (user?.role ?? "MEMBER") : user.group_privilege_level;
+  })();
+  const effectiveRank = ROLE_RANK[effectiveRole] ?? 1;
+
   const coreViews = [
     { label: "Dashboard",  path: "/dashboard",  icon: "dashboard" },
     { label: "Projects",   path: "/",           icon: "projects" },
     { label: "Customers",  path: "/customers",  icon: "customers" },
     { label: "My Tasks",   path: "/my-tasks",   icon: "tasks" },
-    { label: "Analytics",  path: "/analytics",  icon: "analytics" },
+    // Analytics requires effective role >= ADMIN
+    ...(effectiveRank >= ROLE_RANK.ADMIN
+      ? [{ label: "Analytics", path: "/analytics", icon: "analytics" }]
+      : []),
   ];
 
   const adminViews = [
-    ...( ["ADMIN", "LEAD", "MANAGER"].includes(user?.role)
-      ? [{ label: "Users", path: "/users", icon: "users" }] : [] ),
-    ...( ["ADMIN", "LEAD", "MANAGER"].includes(user?.role)
-      ? [{ label: "Reports", path: "/reports", icon: "reports" }] : [] ),
-    ...( user?.role === "ADMIN"
-      ? [{ label: "Access & Groups", path: "/access", icon: "access" }] : [] ),
+    // Users and Reports: ADMIN, LEAD, MANAGER (rank >= MANAGER)
+    ...(effectiveRank >= ROLE_RANK.MANAGER
+      ? [
+          { label: "Users",   path: "/users",   icon: "users" },
+          { label: "Reports", path: "/reports", icon: "reports" },
+        ]
+      : []),
+    // Access & Groups: ADMIN+ only
+    ...(effectiveRank >= ROLE_RANK.ADMIN
+      ? [{ label: "Access & Groups", path: "/access", icon: "access" }]
+      : []),
   ];
 
   const renderNavItem = ({ label, path, icon }) => (
@@ -203,7 +220,7 @@ const Sidebar = () => {
             )}
 
             {/* Redirect to User Management for adding new users */}
-            {["ADMIN", "LEAD", "MANAGER"].includes(user?.role) && (
+            {effectiveRank >= ROLE_RANK.MANAGER && (
               <div className={styles.addMemberHint}>
                 <p className={styles.addMemberHintText}>
                   To add a new team member, use the{" "}

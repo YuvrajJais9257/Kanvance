@@ -2,6 +2,15 @@
  * analytics.controller.js
  */
 const AnalyticsModel = require("../models/analytics.model");
+const { getEffectiveRole } = require("../middlewares/requireRole");
+
+const ROLE_RANK = { MEMBER: 1, MANAGER: 2, ADMIN: 3, MASTER_ADMIN: 4 };
+
+/** Returns true when the effective role is below ADMIN (i.e. MEMBER or MANAGER). */
+function isMemberLevel(session) {
+  const role = getEffectiveRole(session);
+  return (ROLE_RANK[role] ?? 1) < ROLE_RANK.ADMIN;
+}
 
 // GET /api/analytics/summary
 exports.summary = async (req, res, next) => {
@@ -13,11 +22,9 @@ exports.summary = async (req, res, next) => {
 // GET /api/analytics/task-completion
 exports.taskCompletion = async (req, res, next) => {
   try {
-    const role   = req.session.userRole ?? "MEMBER";
     const userId = req.session.userId;
-    // MEMBER only sees projects they are assigned to
     const data = await AnalyticsModel.taskCompletionByProject();
-    if (role === "MEMBER") {
+    if (isMemberLevel(req.session)) {
       const filtered = data.filter((p) =>
         p.owner_id === userId ||
         // will be further filtered by project visibility — approximate here
@@ -41,11 +48,10 @@ exports.taskCompletion = async (req, res, next) => {
 // GET /api/analytics/team-utilisation
 exports.teamUtilisation = async (req, res, next) => {
   try {
-    const role   = req.session.userRole ?? "MEMBER";
     const userId = req.session.userId;
     const data   = await AnalyticsModel.teamUtilisation();
-    // MEMBER only sees their own row
-    if (role === "MEMBER") {
+    // Below-ADMIN roles only see their own row
+    if (isMemberLevel(req.session)) {
       return res.json(data.filter((u) => u.user_id === userId));
     }
     res.json(data);
@@ -55,10 +61,9 @@ exports.teamUtilisation = async (req, res, next) => {
 // GET /api/analytics/hours-per-person
 exports.hoursPerPerson = async (req, res, next) => {
   try {
-    const role   = req.session.userRole ?? "MEMBER";
     const userId = req.session.userId;
     const data   = await AnalyticsModel.hoursPerPersonPerProject();
-    if (role === "MEMBER") {
+    if (isMemberLevel(req.session)) {
       return res.json(data.filter((r) => r.user_id === userId));
     }
     res.json(data);
@@ -68,11 +73,10 @@ exports.hoursPerPerson = async (req, res, next) => {
 // GET /api/analytics/blocked-tasks
 exports.blockedTasks = async (req, res, next) => {
   try {
-    const role   = req.session.userRole ?? "MEMBER";
     const userId = req.session.userId;
     const data   = await AnalyticsModel.blockedTasks();
-    // MEMBER only sees blocked tasks on their assigned projects
-    if (role === "MEMBER") {
+    // Below-ADMIN roles only see blocked tasks on their assigned projects
+    if (isMemberLevel(req.session)) {
       const pool = require("../config/db");
       const [assigned] = await pool.execute(
         `SELECT DISTINCT ag.project_id FROM subtasks s

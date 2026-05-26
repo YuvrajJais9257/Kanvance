@@ -314,6 +314,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
   color: var(--text-muted);
   font-size: 0.875rem;
   margin-bottom: 12px;
@@ -322,6 +324,7 @@
 .actionGroup {
   display: flex;
   gap: 8px;
+  flex-wrap: wrap;
 }
 
 .secondaryBtn {
@@ -453,6 +456,14 @@
   flex-shrink: 0;
   cursor: pointer;
   transition: var(--transition-fast);
+  position: relative;
+}
+
+/* Expand touch target to 44×44 without changing visual size */
+.checkbox::before {
+  content: '';
+  position: absolute;
+  inset: -13px;
 }
 
 .checkboxDone {
@@ -740,6 +751,14 @@
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  position: relative;
+}
+
+/* Expand touch target without changing visual size */
+.flagIcon::before {
+  content: '';
+  position: absolute;
+  inset: -15px;
 }
 
 .flagIcon:hover { color: var(--danger); }
@@ -972,6 +991,14 @@
   transition: var(--transition-fast);
   user-select: none;
   flex-shrink: 0;
+  position: relative;
+}
+
+/* Expand touch target to 44×44 without changing visual size */
+.assigneeChip::before {
+  content: '';
+  position: absolute;
+  inset: -10px;
 }
 
 .assigneeChip:hover {
@@ -998,8 +1025,53 @@
   border: 1px solid var(--border-default);
   border-radius: var(--radius-md);
   padding: 5px 0;
-  min-width: 170px;
+  min-width: 200px;
+  max-width: 260px;
   box-shadow: var(--shadow-dropdown);
+}
+
+/* Mobile bottom-sheet overlay behind the dropdown */
+.assigneeOverlay {
+  display: none;
+}
+
+@media (max-width: 640px) {
+  .assigneeOverlay {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.55);
+    z-index: 9998;
+    animation: fadeIn 0.2s ease;
+  }
+
+  .assigneeDropdown {
+    /* Override inline top/left positioning — become a bottom sheet */
+    top: auto !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100% !important;
+    min-width: unset;
+    border-radius: 16px 16px 0 0;
+    padding: 8px 0 env(safe-area-inset-bottom, 12px);
+    animation: slideUp 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  @keyframes slideUp {
+    from { transform: translateY(100%); }
+    to   { transform: translateY(0); }
+  }
+
+  .assigneeOption {
+    padding: 14px 20px;
+    font-size: 0.9375rem;
+  }
+
+  .assigneeInheritedNote {
+    padding: 12px 20px 10px;
+    font-size: 0.8125rem;
+  }
 }
 
 .assigneeOption {
@@ -1127,6 +1199,8 @@
   border-radius: var(--radius-sm);
   padding: 6px 12px;
   margin: 6px 0 0;
+  flex-wrap: wrap;
+  word-break: break-word;
 }
 
 .unassignedBanner strong { color: var(--warning); }
@@ -1498,26 +1572,17 @@
   }
 
   .cardTop {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1.6fr 0.8fr 0.9fr 1fr 0.9fr 0.6fr 22px;
     gap: 10px;
   }
 
   .progressBar {
-    width: 100%;
-  }
-
-  .subtaskRow {
-    grid-template-columns: 24px 1fr 26px 100px;
+    width: 80px;
   }
 
   .dateInput {
     width: 100%;
     max-width: none;
-  }
-
-  .flagIcon,
-  .attachIcon {
-    display: none;
   }
 }
 
@@ -1539,5 +1604,320 @@
   .tabsBar {
     width: calc(100% - 40px);
     overflow-x: auto;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   RESPONSIVE — Tablet (≤ 1024px)
+   ═══════════════════════════════════════════════════════════════ */
+@media (max-width: 1024px) {
+  .cardTop {
+    grid-template-columns: 2fr 0.8fr 0.9fr 1fr 0.9fr 0.6fr 26px;
+    gap: 10px;
+  }
+
+  .progressBar {
+    width: 80px;
+  }
+
+  .typePill {
+    font-size: 0.625rem;
+    padding: 0 8px;
+  }
+
+  .statusPill {
+    font-size: 0.625rem;
+    padding: 4px 8px;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   RESPONSIVE — Mobile (≤ 640px)
+   ═══════════════════════════════════════════════════════════════ */
+@media (max-width: 640px) {
+  /* ── Page chrome ── */
+  .listViewport,
+  .list {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  .header {
+    height: auto;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 14px 16px;
+  }
+
+  .headerRight {
+    width: 100%;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .tabsBar {
+    margin: 16px 0 0 12px;
+    width: calc(100% - 24px);
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .filterRow {
+    margin: 12px 12px 8px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .filterLeft {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .select {
+    min-width: 120px;
+    font-size: 0.8125rem;
+    padding: 7px 10px;
+  }
+
+  /* ── Project card top row — stack to 2 rows ── */
+  .cardTop {
+    grid-template-columns: 1fr auto;
+    grid-template-rows: auto auto auto;
+    gap: 8px 12px;
+    padding: 12px;
+    min-height: unset;
+  }
+
+  .customerCol {
+    grid-column: 1 / 2;
+    grid-row: 1;
+  }
+
+  .typeCol {
+    grid-column: 2 / 3;
+    grid-row: 1;
+    justify-content: flex-end;
+  }
+
+  .ownerCol {
+    grid-column: 1 / 2;
+    grid-row: 2;
+    font-size: 0.8125rem;
+  }
+
+  .statusCol {
+    grid-column: 2 / 3;
+    grid-row: 2;
+    justify-content: flex-end;
+  }
+
+  .progressCol {
+    grid-column: 1 / 2;
+    grid-row: 3;
+    gap: 6px;
+  }
+
+  .progressBar {
+    flex: 1;
+    width: auto;
+    max-width: 140px;
+  }
+
+  .dueCol {
+    grid-column: 2 / 3;
+    grid-row: 3;
+    justify-content: flex-end;
+    font-size: 0.75rem;
+  }
+
+  .chevron {
+    display: none;
+  }
+
+  /* ── Expanded section ── */
+  .expanded {
+    padding: 12px;
+  }
+
+  .expandedTop {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .actionGroup {
+    width: 100%;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .secondaryBtn,
+  .dangerBtn {
+    width: 100%;
+    text-align: center;
+    padding: 10px 14px;
+    font-size: 0.875rem;
+  }
+
+  /* ── Warning banner ── */
+  .unassignedBanner {
+    width: 100%;
+    font-size: 0.75rem;
+    padding: 8px 12px;
+    line-height: 1.5;
+  }
+
+  /* ── Subtask row — 2-line layout ── */
+  .subtaskRow {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 0;
+    padding: 10px 12px;
+    row-gap: 6px;
+  }
+
+  /* Line 1: checkbox + task name + status badge */
+  .checkbox {
+    order: 1;
+    align-self: center;
+    min-width: 36px;
+    min-height: 36px;
+    width: 18px;
+    height: 18px;
+    margin-right: 8px;
+  }
+
+  .subtaskTitle {
+    order: 2;
+    flex: 1;
+    min-width: 0;
+    white-space: normal;
+    word-break: break-word;
+    font-size: 0.875rem;
+    align-self: center;
+  }
+
+  .statusBadgeWrap {
+    order: 3;
+    width: auto;
+    margin-left: auto;
+    align-self: center;
+  }
+
+  .statusBadge {
+    font-size: 0.625rem;
+    padding: 2px 7px;
+  }
+
+  /* Line 2: assignee + date + flag + attach — indented under name */
+  .assigneeWrap {
+    order: 4;
+    margin-left: 44px; /* align under task name (checkbox width + gap) */
+  }
+
+  .dateInput {
+    order: 5;
+    width: 120px;
+    font-size: 0.6875rem;
+  }
+
+  .flagIcon {
+    order: 6;
+    min-width: 36px;
+    min-height: 36px;
+    margin-left: auto;
+  }
+
+  .attachIcon {
+    order: 7;
+    min-width: 36px;
+    min-height: 36px;
+  }
+
+  /* ── Task group header ── */
+  .taskHeader {
+    padding: 0 12px;
+    min-height: 44px;
+  }
+
+  .taskTitle {
+    font-size: 0.875rem;
+  }
+
+  .taskMeta {
+    gap: 8px;
+    font-size: 0.75rem;
+  }
+
+  .smallProgress {
+    width: 40px;
+  }
+
+  /* ── Checklist header progress ── */
+  .subtaskList {
+    max-height: min(280px, 60vh);
+  }
+
+  /* ── Add subtask row ── */
+  .addSubtaskRow {
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 8px 12px;
+  }
+
+  .addSubtaskInput {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .addSubtaskBtn {
+    font-size: 0.75rem;
+    padding: 6px 12px;
+  }
+
+  /* ── Assignee chip touch target ── */
+  .assigneeChip::before {
+    inset: -10px;
+  }
+
+  /* ── Attach panel ── */
+  .attachPanel {
+    padding-left: 12px;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   RESPONSIVE — Small mobile (≤ 480px)
+   ═══════════════════════════════════════════════════════════════ */
+@media (max-width: 480px) {
+  .addBtn {
+    font-size: 0.8125rem;
+    padding: 8px 14px;
+  }
+
+  .customerName {
+    font-size: 0.9375rem;
+  }
+
+  .customerSub {
+    font-size: 0.75rem;
+  }
+
+  .actionGroup {
+    gap: 6px;
+  }
+
+  .secondaryBtn,
+  .dangerBtn {
+    font-size: 0.8125rem;
+    padding: 9px 12px;
+  }
+
+  .dateInput {
+    width: 100px;
+    font-size: 0.625rem;
   }
 }

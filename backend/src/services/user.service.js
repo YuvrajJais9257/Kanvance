@@ -4,12 +4,18 @@
  * Business logic for user CRUD.
  * Handles validation, uniqueness checks, and password hashing.
  * Never returns password_hash.
+ *
+ * Role is derived from the user's group (privilege_level) and is not
+ * settable directly — use group assignment to change a user's access level.
  */
-const bcrypt    = require("bcrypt");
-const UserModel = require("../models/user.model");
+const bcrypt         = require("bcrypt");
+const UserModel      = require("../models/user.model");
+const UserGroupModel = require("../models/userGroup.model");
 
-const SALT_ROUNDS   = 12;
-const VALID_ROLES   = ["ADMIN", "LEAD", "MANAGER", "MEMBER"];
+// Fields that affect session privileges — changing either one bumps role_version
+const PRIVILEGE_FIELDS = new Set(["role", "status"]);
+
+const SALT_ROUNDS    = 12;
 const VALID_STATUSES = ["active", "inactive", "disabled"];
 
 // ── Helpers ───────────────────────────────────────────────────
@@ -36,15 +42,19 @@ exports.getById = async (id) => {
 };
 
 // ── Create ────────────────────────────────────────────────────
-exports.create = async ({ name, username, full_name, email, password, role, status, group_id }) => {
+exports.create = async ({ name, username, full_name, email, password, status, group_id }) => {
   if (!name || !name.trim())     throw bad("name is required");
   if (!email || !email.trim())   throw bad("email is required");
   if (!password)                 throw bad("password is required");
   if (!group_id)                 throw bad("group_id is required — every user must belong to a group");
   if (!validateEmail(email))     throw bad("Invalid email format");
   if (!validatePassword(password)) throw bad("Password must be at least 8 characters and contain a letter and a number");
-  if (role && !VALID_ROLES.includes(role))     throw bad(`role must be one of: ${VALID_ROLES.join(", ")}`);
   if (status && !VALID_STATUSES.includes(status)) throw bad(`status must be one of: ${VALID_STATUSES.join(", ")}`);
+
+  // Derive role from the group — group is the single source of truth
+  const group = await UserGroupModel.getById(group_id);
+  if (!group) throw Object.assign(new Error("Group not found"), { status: 404 });
+  const role = group.privilege_level;
 
   // Uniqueness checks
   if (await UserModel.emailExists(email)) {
@@ -63,9 +73,9 @@ exports.create = async ({ name, username, full_name, email, password, role, stat
     full_name:     full_name?.trim() ?? null,
     email:         email.trim().toLowerCase(),
     password_hash,
-    role:          role ?? "MEMBER",
+    role,
     status:        status ?? "active",
-    group_id:      group_id,
+    group_id,
   });
 
   return UserModel.getById(id);
@@ -97,10 +107,8 @@ exports.update = async (id, data) => {
     }
     patch.email = data.email.trim().toLowerCase();
   }
-  if (data.role !== undefined) {
-    if (!VALID_ROLES.includes(data.role)) throw bad(`role must be one of: ${VALID_ROLES.join(", ")}`);
-    patch.role = data.role;
-  }
+  // role is intentionally not updatable here — it is derived from group assignment.
+  // To change a user's access level, reassign them to a different group.
   if (data.status !== undefined) {
     if (!VALID_STATUSES.includes(data.status)) throw bad(`status must be one of: ${VALID_STATUSES.join(", ")}`);
     patch.status = data.status;
@@ -111,6 +119,14 @@ exports.update = async (id, data) => {
   }
 
   await UserModel.update(id, patch);
+
+  // If role or status changed, bump role_version so active sessions are
+  // invalidated on their next request (instant privilege revocation).
+  const privilegeChanged = Object.keys(patch).some((k) => PRIVILEGE_FIELDS.has(k));
+  if (privilegeChanged) {
+    await UserModel.bumpRoleVersion(id);
+  }
+
   return UserModel.getById(id);
 };
 
@@ -119,6 +135,8 @@ exports.deactivate = async (id) => {
   const existing = await UserModel.getById(id);
   if (!existing) throw notFound();
   await UserModel.update(id, { status: "inactive" });
+  // Status change — invalidate active sessions immediately
+  await UserModel.bumpRoleVersion(id);
   return UserModel.getById(id);
 };
 

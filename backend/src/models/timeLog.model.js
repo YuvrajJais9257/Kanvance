@@ -3,8 +3,9 @@
  *
  * CRUD + upsert helpers for the time_logs table.
  *
- * Natural key: (employee_id, project_name, activity_group, date)
- * Excel uploads use upsert — they always overwrite matching rows.
+ * Natural key: (employee_id, project_name, activity_group, subtask_name, date)
+ * Excel uploads use upsert — on match they update ONLY hours, status, notes.
+ * Employee name and project name are NEVER overwritten on an existing record.
  * App auto-logs use insert-if-not-exists — they never overwrite.
  */
 const pool = require("../config/db");
@@ -17,25 +18,30 @@ const pool = require("../config/db");
  * @param {number} entry.employee_id
  * @param {string} entry.project_name
  * @param {string} entry.activity_group
+ * @param {string} [entry.subtask_name]
  * @param {string} entry.date          — YYYY-MM-DD
  * @param {number} entry.hours
  * @returns {Promise<{inserted: boolean}>}
  */
-exports.insertAppLog = async ({ employee_id, project_name, activity_group, date, hours }) => {
+exports.insertAppLog = async ({ employee_id, project_name, activity_group, subtask_name, date, hours }) => {
   const [result] = await pool.execute(
     `INSERT IGNORE INTO time_logs
-       (employee_id, project_name, activity_group, date, hours, source)
-     VALUES (?, ?, ?, ?, ?, 'app')`,
-    [employee_id, project_name ?? "", activity_group ?? "", date, hours]
+       (employee_id, project_name, activity_group, subtask_name, date, hours, source)
+     VALUES (?, ?, ?, ?, ?, ?, 'app')`,
+    [employee_id, project_name ?? "", activity_group ?? "", subtask_name ?? "", date, hours]
   );
   return { inserted: result.affectedRows > 0 };
 };
 
 /**
  * Upsert a batch of Excel-sourced rows.
- * On duplicate natural key: overwrite hours + source.
  *
- * @param {Array<{employee_id, project_name, activity_group, date, hours}>} rows
+ * Match key: (employee_id, project_name, activity_group, subtask_name, date)
+ * On match  → UPDATE hours, status, notes only.
+ *             employee_id and project_name are NEVER overwritten.
+ * No match  → INSERT new record.
+ *
+ * @param {Array<{employee_id, project_name, activity_group, subtask_name, date, hours, status, notes}>} rows
  * @returns {Promise<{inserted: number, updated: number}>}
  */
 exports.upsertExcelBatch = async (rows) => {
@@ -47,13 +53,24 @@ exports.upsertExcelBatch = async (rows) => {
   for (const row of rows) {
     const [result] = await pool.execute(
       `INSERT INTO time_logs
-         (employee_id, project_name, activity_group, date, hours, source)
-       VALUES (?, ?, ?, ?, ?, 'excel')
+         (employee_id, project_name, activity_group, subtask_name, date, hours, status, notes, source)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'excel')
        ON DUPLICATE KEY UPDATE
          hours      = VALUES(hours),
+         status     = VALUES(status),
+         notes      = VALUES(notes),
          source     = 'excel',
          updated_at = CURRENT_TIMESTAMP`,
-      [row.employee_id, row.project_name ?? "", row.activity_group ?? "", row.date, row.hours]
+      [
+        row.employee_id,
+        row.project_name  ?? "",
+        row.activity_group ?? "",
+        row.subtask_name  ?? "",
+        row.date,
+        row.hours,
+        row.status ?? null,
+        row.notes  ?? null,
+      ]
     );
     // affectedRows = 1 → insert, 2 → update, 0 → no change (same value)
     if (result.affectedRows === 1) inserted++;
@@ -67,27 +84,29 @@ exports.upsertExcelBatch = async (rows) => {
  * Preview conflicts for a batch of Excel rows before committing.
  * Returns per-row conflict info: whether an existing entry exists and its source.
  *
- * @param {Array<{employee_id, project_name, activity_group, date}>} rows
+ * @param {Array<{employee_id, project_name, activity_group, subtask_name, date}>} rows
  * @returns {Promise<Map<string, {existing_hours, existing_source}>>}
- *   Key is `${employee_id}|${project_name}|${activity_group}|${date}`
+ *   Key is `${employee_id}|${project_name}|${activity_group}|${subtask_name}|${date}`
  */
 exports.findConflicts = async (rows) => {
   if (!rows.length) return new Map();
 
   // Build a single query with OR conditions for efficiency
   const conditions = rows.map(() =>
-    "(employee_id = ? AND project_name = ? AND activity_group = ? AND date = ?)"
+    "(employee_id = ? AND project_name = ? AND activity_group = ? AND subtask_name = ? AND date = ?)"
   ).join(" OR ");
 
   const params = rows.flatMap((r) => [
     r.employee_id,
-    r.project_name ?? "",
-    r.activity_group ?? "",
+    r.project_name    ?? "",
+    r.activity_group  ?? "",
+    r.subtask_name    ?? "",
     r.date,
   ]);
 
   const [existing] = await pool.execute(
-    `SELECT employee_id, project_name, activity_group, date, hours AS existing_hours, source AS existing_source
+    `SELECT employee_id, project_name, activity_group, subtask_name, date,
+            hours AS existing_hours, source AS existing_source
      FROM time_logs
      WHERE ${conditions}`,
     params
@@ -95,7 +114,7 @@ exports.findConflicts = async (rows) => {
 
   const map = new Map();
   for (const row of existing) {
-    const key = `${row.employee_id}|${row.project_name}|${row.activity_group}|${row.date}`;
+    const key = `${row.employee_id}|${row.project_name}|${row.activity_group}|${row.subtask_name ?? ""}|${row.date}`;
     map.set(key, { existing_hours: row.existing_hours, existing_source: row.existing_source });
   }
   return map;

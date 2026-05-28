@@ -1,0 +1,68 @@
+.wrap {
+  padding: 24px 0;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.listItem {
+  height: 72px;
+  border-radius: var(--radius-lg);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 14px;
+}
+
+.gridItem {
+  height: 140px;
+  border-radius: var(--radius-lg);
+}
+
+.table {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tableHead {
+  height: 40px;
+  border-radius: var(--radius-md);
+}
+
+.tableRow {
+  height: 48px;
+  border-radius: var(--radius-md);
+}
+
+.kpiGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+@media (max-width: 1100px) {
+  .kpiGrid { grid-template-columns: repeat(2, 1fr); }
+}
+
+.kpiCard {
+  height: 100px;
+  border-radius: var(--radius-lg);
+}
+
+.block {
+  height: 200px;
+  border-radius: var(--radius-lg);
+  margin-top: 8px;
+}
+
+.compact {
+  height: 48px;
+  border-radius: var(--radius-md);
+}

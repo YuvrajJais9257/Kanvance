@@ -1,0 +1,455 @@
+/* ── Analytics Page ──────────────────────────────────────────── */
+.page {
+  padding: 32px 40px 48px;
+  background: var(--bg-base);
+  color: var(--text-primary);
+}
+
+@media (max-width: 900px) {
+  .page { padding: 24px 20px 40px; }
+}
+
+.utilisationViewport {
+  max-height: min(420px, 50vh);
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 24px;
+  gap: 16px;
+}
+
+.title {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-heading);
+  margin: 0 0 4px;
+  letter-spacing: -0.02em;
+}
+
+.subtitle {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.refreshBtn {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  color: var(--text-secondary);
+  border-radius: var(--radius-md);
+  padding: 8px 16px;
+  font-size: 0.8125rem;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: var(--transition-fast);
+}
+
+.refreshBtn:hover:not(:disabled) {
+  background: var(--bg-hover);
+  border-color: var(--accent-border);
+  color: var(--text-primary);
+}
+
+.refreshBtn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ── Tab bar ── */
+.tabBar {
+  display: flex;
+  gap: 2px;
+  margin-bottom: 28px;
+  border-bottom: 1px solid var(--border-subtle);
+  padding-bottom: 0;
+}
+
+.tab {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  padding: 10px 18px;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: var(--transition-fast);
+}
+
+.tab:hover { color: var(--text-secondary); }
+
+.tabActive {
+  color: var(--accent-text);
+  border-bottom-color: var(--accent);
+  font-weight: 600;
+}
+
+.tabBadge {
+  background: var(--danger);
+  color: var(--white);
+  font-size: 0.625rem;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: var(--radius-full);
+  min-width: 18px;
+  text-align: center;
+}
+
+/* ── KPI cards ── */
+.kpiGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin-bottom: 28px;
+}
+
+.kpiCard {
+  position: relative;
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 20px 20px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  box-shadow: var(--shadow-card);
+  transition: var(--transition);
+  overflow: hidden;
+}
+
+.kpiCard:hover {
+  border-color: var(--accent-border);
+  box-shadow: var(--shadow-hover);
+  transform: translateY(-2px);
+}
+
+.kpiIcon { font-size: 20px; margin-bottom: 4px; }
+
+.kpiValue {
+  font-size: 2.25rem;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--accent-text);
+  letter-spacing: -0.02em;
+}
+
+.kpiLabel {
+  font-size: 0.6875rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 600;
+  margin-top: 2px;
+}
+
+.kpiSub {
+  font-size: 0.6875rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.kpiSpark {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+/* ── Section ── */
+.section { margin-bottom: 32px; }
+
+.sectionTitle {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  margin: 0 0 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+/* ── Status breakdown ── */
+.statusGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 20px 24px;
+  box-shadow: var(--shadow-card);
+}
+
+.statusRow {
+  display: grid;
+  grid-template-columns: 10px 160px 1fr 50px 44px;
+  align-items: center;
+  gap: 12px;
+}
+
+.statusDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.statusName { font-size: 0.8125rem; color: var(--text-secondary); }
+.statusCount { font-size: 0.8125rem; font-weight: 600; color: var(--text-heading); text-align: right; }
+.statusPct   { font-size: 0.75rem; color: var(--text-muted); text-align: right; }
+
+/* ── Progress bar ── */
+.barTrack {
+  background: var(--bg-elevated);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+  width: 100%;
+  height: 5px;
+}
+
+.barFill {
+  height: 100%;
+  border-radius: var(--radius-full);
+  background: var(--gradient-bar);
+  transition: width 0.4s ease;
+}
+
+/* ── Table ── */
+.tableWrap {
+  overflow: auto;
+  max-height: min(480px, 55vh);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+}
+
+.table th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: rgba(26, 35, 54, 0.92);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: var(--text-muted);
+  font-weight: 600;
+  padding: 10px 14px;
+  text-align: left;
+  white-space: nowrap;
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.table td {
+  padding: 10px 14px;
+  border-top: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+}
+
+.table tbody tr:hover td {
+  background: var(--accent-light);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+.customerName { color: var(--text-heading); font-weight: 600; }
+.personName   { color: var(--text-heading); font-weight: 600; }
+.numCell      { font-weight: 700; color: var(--accent-text); white-space: nowrap; }
+.dateCell     { color: var(--text-secondary); white-space: nowrap; }
+.barCell      { min-width: 120px; }
+
+.progressCell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 140px;
+}
+
+.pctLabel { font-size: 0.75rem; color: var(--text-secondary); white-space: nowrap; }
+
+.typePill {
+  font-size: 0.6875rem;
+  background: var(--accent-light);
+  color: var(--accent-text);
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  white-space: nowrap;
+  font-weight: 600;
+  border: 1px solid var(--accent-border);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.statusBadge {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+  white-space: nowrap;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* ── Team Utilisation ── */
+.utilisationGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 14px;
+}
+
+.utilisationCard {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-shadow: var(--shadow-card);
+  transition: var(--transition);
+}
+
+.utilisationCard:hover {
+  border-color: var(--accent-border);
+  box-shadow: var(--shadow-hover);
+  transform: translateY(-2px);
+}
+
+.utilisationTop {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Avatar with role-colored ring */
+.utilisationAvatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--gradient-avatar);
+  color: var(--blue-text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 14px;
+  flex-shrink: 0;
+  border: 2px solid var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
+/* Role-specific ring colors applied via inline style or extra classes */
+.utilisationAvatarAdmin {
+  border-color: var(--danger);
+  box-shadow: 0 0 0 3px var(--danger-light);
+}
+
+.utilisationAvatarManager {
+  border-color: var(--warning);
+  box-shadow: 0 0 0 3px var(--warning-light);
+}
+
+.utilisationAvatarMember {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
+.utilisationInfo {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.utilisationName { font-size: 0.875rem; font-weight: 600; color: var(--text-heading); }
+.utilisationRole { font-size: 0.6875rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; }
+.utilisationHours { font-size: 1.5rem; font-weight: 700; color: var(--accent-text); letter-spacing: -0.02em; }
+
+.utilisationMeta {
+  display: flex;
+  gap: 12px;
+  font-size: 0.6875rem;
+  color: var(--text-muted);
+  flex-wrap: wrap;
+}
+
+/* ── Blocked tasks ── */
+.blockedCount {
+  background: var(--danger);
+  color: var(--white);
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+}
+
+.allClear {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--success-light);
+  border: 1px solid var(--success-border);
+  border-radius: var(--radius-md);
+  padding: 20px 24px;
+  color: var(--success-text);
+  font-size: 0.9375rem;
+}
+
+.allClearIcon { font-size: 24px; }
+
+.blockedList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.blockedCard {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-left: 3px solid var(--danger);
+  border-radius: var(--radius-md);
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-shadow: var(--shadow-card);
+}
+
+.blockedTop {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.blockedProject { font-size: 0.75rem; color: var(--text-muted); }
+.blockedDue     { font-size: 0.75rem; color: var(--warning-text); margin-left: auto; }
+.blockedName    { font-size: 0.9375rem; font-weight: 600; color: var(--text-heading); }
+
+.blockedFlag {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.flagType    { font-size: 0.75rem; color: var(--danger-text); font-weight: 600; }
+.flagReason  { font-size: 0.75rem; color: var(--text-secondary); }
+.flagWaiting { font-size: 0.75rem; color: var(--warning-text); }
+
+.blockedAssignee { font-size: 0.75rem; color: var(--text-muted); }
+.blockedAssignee strong { color: var(--text-secondary); }
+
+.loading { color: var(--text-muted); font-size: 0.875rem; padding: 40px 0; text-align: center; }
+.empty   { color: var(--text-muted); font-size: 0.875rem; padding: 20px; text-align: center; }

@@ -1,0 +1,259 @@
+/* ── My Tasks Page ───────────────────────────────────────────── */
+.page {
+  background: var(--bg-base);
+  color: var(--text-primary);
+}
+
+.taskViewport {
+  padding: 0 28px 16px 36px;
+}
+
+/* ── Header ── */
+.header {
+  height: 88px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 28px 0 36px;
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--bg-surface);
+}
+
+.title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-heading);
+  letter-spacing: -0.02em;
+}
+
+.subtitle {
+  margin: 3px 0 0;
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+}
+
+.dateStr {
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+  letter-spacing: 0.03em;
+}
+
+/* ── Member picker ── */
+.pickerRow {
+  padding: 20px 32px 0;
+}
+
+.tabStrip {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.memberTab {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  font-weight: 500;
+  padding: 8px 16px;
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+.memberTab:hover {
+  border-color: var(--accent-border);
+  color: var(--text-primary);
+}
+
+.memberTabActive {
+  background: var(--accent-light);
+  border-color: var(--accent-border);
+  color: var(--accent-text);
+  font-weight: 700;
+}
+
+.memberAvatar {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--gradient-avatar);
+  color: var(--blue-text);
+  font-size: 11px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.memberSelect {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-size: 0.875rem;
+  padding: 10px 16px;
+  outline: none;
+  min-width: 200px;
+  transition: var(--transition-fast);
+}
+
+.memberSelect:focus {
+  border-color: var(--accent);
+  box-shadow: var(--shadow-focus);
+}
+
+/* ── Content ── */
+.content {
+  padding: 24px 32px 40px;
+}
+
+.empty {
+  padding: 60px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.9375rem;
+}
+
+/* ── Project section ── */
+.projectSection {
+  margin-bottom: 28px;
+}
+
+.projectName {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: var(--accent-text);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 10px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: var(--transition-fast);
+}
+
+.projectName:hover { color: var(--accent-soft); }
+
+.projectName:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus);
+  border-radius: var(--radius-sm);
+}
+
+.projectArrow {
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+/* ── Task list ── */
+.taskList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.taskRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 12px 16px;
+  transition: var(--transition);
+  box-shadow: var(--shadow-card);
+}
+
+.taskRow:hover {
+  border-color: var(--border-default);
+  box-shadow: var(--shadow-hover);
+  transform: translateY(-1px);
+}
+
+.taskRow.overdue {
+  border-left: 3px solid var(--danger);
+}
+
+.taskRow.dueSoon {
+  border-left: 3px solid var(--warning);
+}
+
+.taskMain {
+  flex: 1;
+  min-width: 0;
+}
+
+.taskGroupName {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  margin-bottom: 3px;
+}
+
+.taskName {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.taskMeta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.statusBadge {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: var(--radius-sm);
+  white-space: nowrap;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.dueDate {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.dueDate.overdue { color: var(--danger-text); font-weight: 600; }
+.dueDate.dueSoon { color: var(--warning-text); font-weight: 600; }
+
+.flagBadge {
+  color: var(--danger);
+  font-size: 13px;
+  cursor: default;
+}
+
+/* ── Inherited task label ── */
+.inheritedLabel {
+  display: inline-block;
+  margin-left: 8px;
+  font-size: 0.625rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  background: rgba(100,116,139,0.1);
+  border: 1px dashed var(--text-muted);
+  border-radius: 4px;
+  padding: 1px 6px;
+  vertical-align: middle;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}

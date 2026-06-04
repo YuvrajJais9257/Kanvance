@@ -24,6 +24,9 @@ exports.update = async (id, data) => {
     `UPDATE subtasks SET ${setClauses} WHERE id = ?`,
     values
   );
+  // NOTE: task_assignments are managed exclusively through assignment.service.js
+  // syncAssignees (called by subtask.service.js update) to avoid duplicate-key
+  // errors on the uq_user_subtask constraint. Do NOT insert task_assignments here.
 };
 
 exports.remove = async (id) => {

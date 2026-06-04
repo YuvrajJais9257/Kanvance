@@ -1,0 +1,388 @@
+/* TimesheetGrid.module.css */
+
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 24px;
+  background: var(--bg-surface);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-subtle);
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+}
+
+.header h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.weekInfo {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.weekLabel {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+  padding: 8px 12px;
+  background: var(--bg-input);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+}
+
+.addBtn {
+  background: var(--accent);
+  color: white;
+  border: none;
+  padding: 10px 16px;
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition-fast);
+  white-space: nowrap;
+}
+
+.addBtn:hover {
+  background: #7c3aed;
+  box-shadow: var(--shadow-md);
+}
+
+.gridWrapper {
+  overflow-x: auto;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--bg-elevated);
+}
+
+.grid {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.grid thead {
+  background: var(--bg-input);
+  border-bottom: 2px solid var(--border-default);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.grid th {
+  padding: 12px 8px;
+  text-align: left;
+  font-weight: 600;
+  color: var(--text-secondary);
+  border-right: 1px solid var(--border-subtle);
+  white-space: nowrap;
+}
+
+.dayHeader {
+  padding: 8px 4px;
+  min-width: 90px;
+  text-align: center;
+}
+
+.dayName {
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.dayDate {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.actionsHeader {
+  width: 60px;
+  text-align: center;
+}
+
+.grid tbody tr {
+  border-bottom: 1px solid var(--border-subtle);
+  transition: var(--transition-fast);
+}
+
+.grid tbody tr:hover {
+  background: var(--bg-hover);
+}
+
+.grid td {
+  padding: 12px 8px;
+  border-right: 1px solid var(--border-subtle);
+  vertical-align: top;
+  color: var(--text-primary);
+}
+
+.projectCell {
+  font-weight: 600;
+  color: var(--accent);
+  background: rgba(168, 85, 247, 0.05);
+  width: 150px;
+  max-width: 150px;
+  word-wrap: break-word;
+}
+
+.taskCell {
+  font-weight: 500;
+  background: rgba(59, 130, 246, 0.05);
+  width: 120px;
+  max-width: 120px;
+  word-wrap: break-word;
+}
+
+.subtaskCell {
+  width: 140px;
+  max-width: 140px;
+  word-wrap: break-word;
+}
+
+.typeCell {
+  width: 100px;
+  min-width: 100px;
+}
+
+.typeList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.typeBadge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 4px;
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.dayCell {
+  min-width: 90px;
+  text-align: center;
+  background: var(--bg-surface);
+  padding: 8px 4px;
+}
+
+.hoursStack {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: center;
+}
+
+.totalHours {
+  font-weight: 700;
+  color: var(--accent);
+  font-size: 0.9375rem;
+}
+
+.entryDetails {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  width: 100%;
+}
+
+.entryChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px;
+  padding: 3px 6px;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  position: relative;
+}
+
+.deleteEntryBtn {
+  background: none;
+  border: none;
+  color: #ef4444;
+  font-size: 0.875rem;
+  cursor: pointer;
+  padding: 0;
+  margin-left: 2px;
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+}
+
+.entryChip:hover .deleteEntryBtn {
+  opacity: 1;
+}
+
+.deleteEntryBtn:hover {
+  color: #dc2626;
+}
+
+.actionsCell {
+  text-align: center;
+  width: 60px;
+  padding: 8px;
+}
+
+.addEntryBtn {
+  background: var(--bg-input);
+  border: 1px solid var(--border-default);
+  color: var(--text-secondary);
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  font-size: 1.125rem;
+  cursor: pointer;
+  transition: var(--transition-fast);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.addEntryBtn:hover {
+  background: var(--accent);
+  color: white;
+  border-color: var(--accent);
+}
+
+.empty {
+  color: var(--text-muted);
+}
+
+.emptyState {
+  text-align: center;
+  padding: 60px 24px;
+  color: var(--text-muted);
+}
+
+.emptyState p {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.hint {
+  font-size: 0.875rem;
+  margin-top: 8px !important;
+}
+
+/* Responsive: hide day columns on very small screens */
+@media (max-width: 768px) {
+  .grid {
+    font-size: 0.75rem;
+  }
+
+  .dayHeader {
+    min-width: 70px;
+    padding: 6px 2px;
+  }
+
+  .dayCell {
+    min-width: 70px;
+    padding: 6px 2px;
+  }
+
+  .projectCell,
+  .taskCell,
+  .subtaskCell {
+    max-width: 80px;
+    word-wrap: break-word;
+    font-size: 0.75rem;
+  }
+
+  .grid th,
+  .grid td {
+    padding: 8px 4px;
+  }
+}
+
+/* ── Inline editing ── */
+.inlineEdit {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  align-items: center;
+}
+
+.inlineInput {
+  width: 58px;
+  padding: 3px 5px;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  text-align: center;
+  background: var(--bg-input);
+  border: 1.5px solid var(--accent);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  outline: none;
+  box-shadow: 0 0 0 2px var(--accent-glow);
+}
+
+.inlineInput::-webkit-inner-spin-button,
+.inlineInput::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.inlineSelect {
+  width: 72px;
+  font-size: 0.6875rem;
+  padding: 2px 3px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  outline: none;
+}
+
+/* Empty cell — dim dash that brightens on hover */
+.emptyCell {
+  color: rgba(100, 116, 139, 0.35);
+  font-size: 0.9375rem;
+  transition: color 0.15s;
+}
+
+td:hover .emptyCell {
+  color: rgba(100, 116, 139, 0.8);
+}
+
+/* Delete button visible on cell hover */
+.hoursStack {
+  position: relative;
+}
+
+.hoursStack .deleteEntryBtn {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--danger-light);
+  border: 1px solid var(--danger-border);
+  color: var(--danger-text);
+  font-size: 10px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  padding: 0;
+  transition: opacity 0.15s;
+}
+
+td:hover .hoursStack .deleteEntryBtn {
+  opacity: 1;
+}

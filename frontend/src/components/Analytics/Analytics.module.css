@@ -9,9 +9,6 @@
   .page { padding: 24px 20px 40px; }
 }
 
-.utilisationViewport {
-  max-height: min(420px, 50vh);
-}
 
 .header {
   display: flex;
@@ -308,6 +305,13 @@
   gap: 14px;
 }
 
+/* Full-width stacked list replaces the virtualised grid */
+.utilisationList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
 .utilisationCard {
   background: var(--bg-surface);
   border: 1px solid var(--border-subtle);
@@ -315,15 +319,172 @@
   padding: 16px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
   box-shadow: var(--shadow-card);
-  transition: var(--transition);
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 .utilisationCard:hover {
   border-color: var(--accent-border);
   box-shadow: var(--shadow-hover);
-  transform: translateY(-2px);
+}
+
+.utilisationCardExpanded {
+  border-color: var(--accent-border);
+  box-shadow: var(--shadow-hover);
+}
+
+.expandChevron {
+  font-size: 0.625rem;
+  color: var(--text-muted);
+  margin-left: 4px;
+  flex-shrink: 0;
+  user-select: none;
+}
+
+/* ── Expand body ── */
+.expandBody {
+  border-top: 1px solid var(--border-subtle);
+  padding-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.expandEmpty {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  padding: 6px 0;
+  margin: 0;
+}
+
+/* ── Project block inside expand ── */
+.projBlock {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.projRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: background 0.15s;
+  user-select: none;
+}
+
+.projRow:hover {
+  background: var(--accent-light);
+}
+
+.projChevron {
+  font-size: 0.75rem;
+  color: var(--accent-text);
+  flex-shrink: 0;
+  width: 12px;
+}
+
+.projName {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text-heading);
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.projCustomer {
+  font-size: 0.6875rem;
+  color: var(--text-muted);
+  flex-shrink: 0;
+  max-width: 120px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.projHours {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--accent-text);
+  flex-shrink: 0;
+  min-width: 36px;
+  text-align: right;
+}
+
+/* ── Group + subtask list ── */
+.groupList {
+  padding: 4px 0 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.groupBlock {
+  padding: 0 12px;
+}
+
+.groupName {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  padding: 6px 0 3px;
+}
+
+.subtaskList {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.subtaskRow {
+  display: grid;
+  grid-template-columns: 8px 1fr auto auto;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 0;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.subtaskDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.subtaskName {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.subtaskStatus {
+  font-size: 0.625rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.subtaskHours {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--accent-text);
+  white-space: nowrap;
+  flex-shrink: 0;
+  min-width: 28px;
+  text-align: right;
 }
 
 .utilisationTop {

@@ -38,7 +38,7 @@ const COLUMNS = [
 // ── 1. Generate blank template ────────────────────────────────────────────
 exports.generateTemplate = async () => {
   const wb = new ExcelJS.Workbook();
-  wb.creator = "CyberArk Practice Tracker";
+  wb.creator = "EraDesk";
   wb.created = new Date();
 
   const ws = wb.addWorksheet("Timesheet", {
@@ -83,7 +83,7 @@ exports.generateTemplate = async () => {
   const info = wb.addWorksheet("Instructions");
   info.getColumn(1).width = 80;
   const instructions = [
-    ["CyberArk Practice Tracker — Timesheet Template"],
+    ["EraDesk — Timesheet Template"],
     [""],
     ["HOW TO FILL IN THIS TEMPLATE:"],
     ["1. Date          — Use YYYY-MM-DD format (e.g. 2026-05-20)"],
@@ -102,7 +102,7 @@ exports.generateTemplate = async () => {
   ];
   instructions.forEach(([text]) => {
     const row = info.addRow([text]);
-    if (text.startsWith("CyberArk")) {
+    if (text.startsWith("EraDesk")) {
       row.getCell(1).font = { bold: true, size: 14, color: { argb: COLORS.accent } };
     } else if (text.endsWith(":")) {
       row.getCell(1).font = { bold: true };
@@ -273,7 +273,7 @@ exports.syncToActivityLogs = async (enrichedRows) => {
 // ── 5. Export enriched rows to .xlsx ─────────────────────────────────────
 exports.exportEnriched = async (enrichedRows, runId) => {
   const wb = new ExcelJS.Workbook();
-  wb.creator = "CyberArk Practice Tracker";
+  wb.creator = "EraDesk";
   wb.created = new Date();
 
   // ── Main sheet ──────────────────────────────────────────────────────────
@@ -327,7 +327,7 @@ exports.exportEnriched = async (enrichedRows, runId) => {
   });
 
   const summaryData = [
-    ["CyberArk Practice Tracker — Timesheet Export"],
+    ["EraDesk — Timesheet Export"],
     ["Generated", new Date().toLocaleString()],
     ["Run ID", runId ?? "—"],
     ["Total Rows", enrichedRows.length],

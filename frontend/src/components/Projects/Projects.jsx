@@ -153,28 +153,31 @@ function StatusBadge({ status, onSelect }) {
   );
 }
 
-// ── Assignee Chip (position:fixed dropdown; bottom-sheet on mobile) ───────────
-function AssigneeChip({ assigneeId, assigneeName, inherited, team, onSelect }) {
-  const [open, setOpen] = useState(false);
+// ── Assignee Multi-Picker (position:fixed dropdown; toggles multiple users) ─
+function AssigneeMultiPicker({ currentAssignees = [], inherited, team, onSave }) {
+  const [open, setOpen]       = useState(false);
+  const [selected, setSelected] = useState(() => new Set((currentAssignees || []).map((a) => a.user_id)));
   const [dropPos, setDropPos] = useState({ top: 0, left: 0 });
-  const chipRef = useRef(null);
-  // Stable unique ID for aria-describedby — lazy useState so it never changes
+  const chipRef  = useRef(null);
   const [tooltipId] = useState(() => `assignee-tip-${Math.random().toString(36).slice(2)}`);
+
+  // Sync selection when parent data changes (e.g. after save)
+  useEffect(() => {
+    setSelected(new Set((currentAssignees || []).map((a) => a.user_id)));
+  }, [currentAssignees]);
 
   const isMobile = () => window.innerWidth <= 640;
 
   const openDropdown = () => {
+    // Reset selection to current state whenever the dropdown opens
+    setSelected(new Set((currentAssignees || []).map((a) => a.user_id)));
     if (!isMobile() && chipRef.current) {
       const r = chipRef.current.getBoundingClientRect();
-      const dropWidth = 260;
+      const dropWidth = 240;
       const spaceBelow = window.innerHeight - r.bottom;
-      const dropHeight = Math.min(team.length * 40 + 60, 300);
-      const top = spaceBelow > dropHeight ? r.bottom + 4 : r.top - dropHeight - 4;
-      // Align right edge of dropdown to right edge of chip, clamped to viewport
-      const left = Math.min(
-        Math.max(4, r.right - dropWidth),
-        window.innerWidth - dropWidth - 8
-      );
+      const dropHeight = Math.min(team.length * 42 + 90, 340);
+      const top  = spaceBelow > dropHeight ? r.bottom + 4 : r.top - dropHeight - 4;
+      const left = Math.min(Math.max(4, r.right - dropWidth), window.innerWidth - dropWidth - 8);
       setDropPos({ top, left });
     }
     setOpen((o) => !o);
@@ -183,13 +186,17 @@ function AssigneeChip({ assigneeId, assigneeName, inherited, team, onSelect }) {
   useEffect(() => {
     if (!open) return;
     const handler = (e) => {
-      if (chipRef.current && !chipRef.current.contains(e.target)) setOpen(false);
+      if (chipRef.current && !chipRef.current.contains(e.target)) {
+        // Check if click is inside the dropdown itself (fixed positioned)
+        const drop = document.getElementById(`amp-drop-${tooltipId}`);
+        if (drop && drop.contains(e.target)) return;
+        setOpen(false);
+      }
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
-  }, [open]);
+  }, [open, tooltipId]);
 
-  // Close on Escape key globally when open
   useEffect(() => {
     if (!open) return;
     const handler = (e) => { if (e.key === "Escape") setOpen(false); };
@@ -197,16 +204,37 @@ function AssigneeChip({ assigneeId, assigneeName, inherited, team, onSelect }) {
     return () => document.removeEventListener("keydown", handler);
   }, [open]);
 
-  const initials = assigneeName ? assigneeName[0].toUpperCase() : "+";
+  const toggle = (userId) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(userId)) next.delete(userId);
+      else next.add(userId);
+      return next;
+    });
+  };
+
+  const handleSave = () => {
+    onSave([...selected]);
+    setOpen(false);
+  };
+
+  // Build display: up to 2 avatars stacked, then "+N" badge, or "+" when empty
+  const assigneeList  = currentAssignees || [];
+  const visibleCount  = Math.min(assigneeList.length, 2);
+  const overflowCount = assigneeList.length - visibleCount;
+
   const ariaLabel = inherited
-    ? `${assigneeName} (project owner — no explicit assignee). Click to assign.`
-    : (assigneeName ? `Assigned to ${assigneeName}. Click to change.` : "Unassigned. Click to assign.");
+    ? "Inherited from project owner. Click to assign."
+    : assigneeList.length > 0
+    ? `Assigned to ${assigneeList.map((a) => a.user_name).join(", ")}. Click to change.`
+    : "Unassigned. Click to assign.";
 
   return (
     <div className={styles.assigneeWrap} onClick={(e) => e.stopPropagation()}>
+      {/* Trigger — stacked avatars or empty "+" chip */}
       <span
         ref={chipRef}
-        className={`${styles.assigneeChip} ${!assigneeName ? styles.assigneeChipEmpty : ""} ${inherited ? styles.assigneeChipInherited : ""}`}
+        className={`${styles.assigneeMultiTrigger} ${assigneeList.length === 0 ? styles.assigneeChipEmpty : ""} ${inherited ? styles.assigneeChipInherited : ""}`}
         aria-label={ariaLabel}
         aria-describedby={inherited ? tooltipId : undefined}
         aria-haspopup="listbox"
@@ -218,67 +246,109 @@ function AssigneeChip({ assigneeId, assigneeName, inherited, team, onSelect }) {
           if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openDropdown(); }
           if (e.key === "Escape") setOpen(false);
         }}
+        style={{ display: "inline-flex", alignItems: "center", gap: 0 }}
       >
-        {initials}
+        {assigneeList.length === 0 ? (
+          <span className={styles.assigneeChip} style={{ background: "none" }}>+</span>
+        ) : (
+          assigneeList.slice(0, 2).map((a, idx) => (
+            <span
+              key={a.user_id}
+              title={a.user_name}
+              style={{
+                width: 24, height: 24, borderRadius: "50%",
+                background: "var(--gradient-avatar)",
+                color: "var(--blue-text)",
+                fontSize: 10, fontWeight: 700,
+                display: "inline-flex", alignItems: "center", justifyContent: "center",
+                border: "2px solid var(--bg-surface)",
+                marginLeft: idx === 0 ? 0 : -6,
+                zIndex: 2 - idx,
+                position: "relative",
+                flexShrink: 0,
+                cursor: "pointer",
+              }}
+            >
+              {a.user_name?.[0]?.toUpperCase()}
+            </span>
+          ))
+        )}
+        {overflowCount > 0 && (
+          <span style={{
+            width: 24, height: 24, borderRadius: "50%",
+            background: "var(--bg-elevated)",
+            color: "var(--text-muted)",
+            fontSize: 8, fontWeight: 700,
+            display: "inline-flex", alignItems: "center", justifyContent: "center",
+            border: "2px solid var(--bg-surface)",
+            marginLeft: -6, position: "relative", zIndex: 0,
+            flexShrink: 0, cursor: "pointer",
+          }}>
+            +{overflowCount}
+          </span>
+        )}
       </span>
-      {/* Mobile overlay — dims background and closes on tap */}
+
+      {/* Mobile overlay */}
       {open && isMobile() && (
-        <div
-          className={styles.assigneeOverlay}
-          onMouseDown={() => setOpen(false)}
-          aria-hidden="true"
-        />
+        <div className={styles.assigneeOverlay} onMouseDown={() => setOpen(false)} aria-hidden="true" />
       )}
+
+      {/* Dropdown */}
       {open && (
         <div
+          id={`amp-drop-${tooltipId}`}
           className={styles.assigneeDropdown}
           style={isMobile() ? {} : { top: dropPos.top, left: dropPos.left }}
           role="listbox"
           aria-label="Assign to"
+          aria-multiselectable="true"
         >
           {inherited && (
-            <div
-              id={tooltipId}
-              className={styles.assigneeInheritedNote}
-              role="tooltip"
-            >
-              Inherited from project owner. Click a name to assign explicitly.
+            <div id={tooltipId} className={styles.assigneeInheritedNote} role="tooltip">
+              Inherited from project owner. Select members to assign explicitly.
             </div>
           )}
-          {team.map((m) => (
-            <div
-              key={m.id}
-              className={`${styles.assigneeOption} ${m.id === assigneeId ? styles.assigneeOptionActive : ""}`}
-              onMouseDown={(e) => { e.preventDefault(); onSelect(m.id); setOpen(false); }}
-              role="option"
-              aria-selected={m.id === assigneeId}
-              tabIndex={0}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault(); onSelect(m.id); setOpen(false);
-                }
-              }}
+          <div className={styles.ampList}>
+            {team.map((m) => {
+              const isOn = selected.has(m.id);
+              return (
+                <div
+                  key={m.id}
+                  className={`${styles.assigneeOption} ${isOn ? styles.assigneeOptionActive : ""}`}
+                  onMouseDown={(e) => { e.preventDefault(); toggle(m.id); }}
+                  role="option"
+                  aria-selected={isOn}
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(m.id); }
+                  }}
+                >
+                  <span className={styles.assigneeAvatar}>{m.name[0]}</span>
+                  <span style={{ flex: 1 }}>{m.name}</span>
+                  {isOn && <span className={styles.ampCheck} aria-hidden="true">✓</span>}
+                </div>
+              );
+            })}
+          </div>
+          <div className={styles.ampFooter}>
+            {selected.size > 0 && (
+              <button
+                className={styles.ampClearBtn}
+                onMouseDown={(e) => { e.preventDefault(); setSelected(new Set()); }}
+                type="button"
+              >
+                Clear
+              </button>
+            )}
+            <button
+              className={styles.ampSaveBtn}
+              onMouseDown={(e) => { e.preventDefault(); handleSave(); }}
+              type="button"
             >
-              <span className={styles.assigneeAvatar}>{m.name[0]}</span>
-              {m.name}
-            </div>
-          ))}
-          {assigneeId && !inherited && (
-            <div
-              className={`${styles.assigneeOption} ${styles.unassignOption}`}
-              onMouseDown={(e) => { e.preventDefault(); onSelect(null); setOpen(false); }}
-              role="option"
-              aria-selected={false}
-              tabIndex={0}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault(); onSelect(null); setOpen(false);
-                }
-              }}
-            >
-              Unassign
-            </div>
-          )}
+              {selected.size === 0 ? "Unassign" : `Assign (${selected.size})`}
+            </button>
+          </div>
         </div>
       )}
     </div>
@@ -430,6 +500,7 @@ const Projects = () => {
     type: "Implementation", owner_id: "",
     due_date: "", status: "On Track",
   });
+  const [selectedMemberIds, setSelectedMemberIds] = useState([]);
 
   // ── Load list ──────────────────────────────────────────────
   const loadList = useCallback(async () => {
@@ -567,9 +638,11 @@ const Projects = () => {
         ...form,
         customer_id: Number(form.customer_id),
         owner_id: form.owner_id ? Number(form.owner_id) : null,
+        initial_member_ids: selectedMemberIds,
       });
       setShowModal(false);
       setForm({ customer_id: "", name: "", subtitle: "", type: "Implementation", owner_id: "", due_date: "", status: "On Track" });
+      setSelectedMemberIds([]);
       await loadList();
       setExpandedProjectId(id);
       const full = await getProject(id);
@@ -643,10 +716,11 @@ const Projects = () => {
     } catch (err) { showError(err.message); }
   };
 
-  // ── Phase 3 — Assign subtask ──────────────────────────────
-  const handleAssign = async (projectId, subtaskId, assigneeId) => {
+  // ── Phase 3 — Assign subtask (multi-user) ────────────────
+  const handleAssign = async (projectId, subtaskId, assigneeIds) => {
     try {
-      await updateSubtask(subtaskId, { assignee_id: assigneeId ?? null, _changedBy: user?.id });
+      // assigneeIds is an array; send as assignee_ids for syncAssignees path
+      await updateSubtask(subtaskId, { assignee_ids: assigneeIds, _changedBy: user?.id });
       await reloadExpanded(projectId);
     } catch (err) { showError(err.message); }
   };
@@ -1126,24 +1200,59 @@ const Projects = () => {
                                               </span>
                                             )}
 
-                                            {/* Assignee chip — clickable for ADMIN/LEAD/MANAGER, read-only for MEMBER */}
-                                            {ASSIGNER_ROLES.includes(user?.role) ? (
-                                              <AssigneeChip
-                                                assigneeId={subtask.effective_assignee_id ?? subtask.assignee_id}
-                                                assigneeName={subtask.assignee_name}
-                                                inherited={!!subtask.inherited}
-                                                team={team}
-                                                onSelect={(id) => handleAssign(project.id, subtask.id, id)}
-                                              />
-                                            ) : (
-                                              <span
-                                                className={`${styles.assigneeChip} ${!subtask.assignee_name ? styles.assigneeChipEmpty : ""} ${subtask.inherited ? styles.assigneeChipInherited : ""}`}
-                                                title={subtask.inherited ? `${subtask.assignee_name} (owner default)` : (subtask.assignee_name ?? "Unassigned")}
-                                                style={{ cursor: "default" }}
-                                              >
-                                                {subtask.assignee_name ? subtask.assignee_name[0].toUpperCase() : "—"}
-                                              </span>
-                                            )}
+                                            {/* Assignee multi-picker — stacked avatars, click to assign/remove */}
+                                            <div
+                                              style={{ display: "flex", alignItems: "center", position: "relative" }}
+                                              onClick={(e) => e.stopPropagation()}
+                                            >
+                                              {ASSIGNER_ROLES.includes(user?.role) ? (
+                                                <AssigneeMultiPicker
+                                                  currentAssignees={subtask.assignees ?? []}
+                                                  inherited={!!subtask.inherited}
+                                                  team={team}
+                                                  onSave={(ids) => handleAssign(project.id, subtask.id, ids)}
+                                                />
+                                              ) : (
+                                                /* Read-only stacked avatars for non-assigners */
+                                                <div style={{ display: "flex", alignItems: "center" }}>
+                                                  {(subtask.assignees ?? []).slice(0, 3).map((a, idx) => (
+                                                    <span
+                                                      key={a.user_id}
+                                                      title={a.user_name}
+                                                      style={{
+                                                        width: 24, height: 24, borderRadius: "50%",
+                                                        background: "var(--gradient-avatar)",
+                                                        color: "var(--blue-text)",
+                                                        fontSize: 10, fontWeight: 700,
+                                                        display: "inline-flex", alignItems: "center", justifyContent: "center",
+                                                        border: "2px solid var(--bg-surface)",
+                                                        marginLeft: idx === 0 ? 0 : -6,
+                                                        zIndex: 3 - idx, position: "relative", flexShrink: 0,
+                                                      }}
+                                                    >
+                                                      {a.user_name?.[0]?.toUpperCase()}
+                                                    </span>
+                                                  ))}
+                                                  {(subtask.assignees ?? []).length === 0 && (
+                                                    <span
+                                                      className={styles.assigneeChip}
+                                                      style={{ cursor: "default", background: "none" }}
+                                                    >—</span>
+                                                  )}
+                                                  {(subtask.assignees ?? []).length > 3 && (
+                                                    <span style={{
+                                                      width: 24, height: 24, borderRadius: "50%",
+                                                      background: "var(--bg-elevated)", color: "var(--text-muted)",
+                                                      fontSize: 8, fontWeight: 700,
+                                                      display: "inline-flex", alignItems: "center", justifyContent: "center",
+                                                      border: "2px solid var(--bg-surface)", marginLeft: -6, flexShrink: 0,
+                                                    }}>
+                                                      +{(subtask.assignees ?? []).length - 3}
+                                                    </span>
+                                                  )}
+                                                </div>
+                                              )}
+                                            </div>
 
                                             {/* Due date */}
                                             <input
@@ -1595,11 +1704,11 @@ const Projects = () => {
 
         {/* Add Project Modal */}
         {showModal && (
-          <div className={styles.modalOverlay} onClick={() => setShowModal(false)}>
+          <div className={styles.modalOverlay} onClick={() => { setShowModal(false); setSelectedMemberIds([]); }}>
             <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
               <div className={styles.modalHeader}>
                 <h2>Add Project</h2>
-                <button className={styles.closeBtn} onClick={() => setShowModal(false)}>×</button>
+                <button className={styles.closeBtn} onClick={() => { setShowModal(false); setSelectedMemberIds([]); }}>×</button>
               </div>
               <form className={styles.form} onSubmit={handleAddProject}>
                 <div className={styles.formRow}>
@@ -1657,8 +1766,79 @@ const Projects = () => {
                   <input type="date" value={form.due_date}
                     onChange={(e) => setForm({ ...form, due_date: e.target.value })} />
                 </div>
+                {/* Initial team members */}
+                <div className={styles.field} style={{ gridColumn: "1 / -1" }}>
+                  <label>Initial Team Members</label>
+                  <div style={{
+                    background: "var(--bg-input)",
+                    border: "1px solid var(--border-default)",
+                    borderRadius: "var(--radius-md)",
+                    padding: "8px",
+                    display: "flex",
+                    flexWrap: "wrap",
+                    gap: "6px",
+                    minHeight: "44px",
+                  }}>
+                    {team.filter((m) => m.id !== Number(form.owner_id)).map((m) => {
+                      const isSelected = selectedMemberIds.includes(m.id);
+                      return (
+                        <span
+                          key={m.id}
+                          onClick={() =>
+                            setSelectedMemberIds((prev) =>
+                              isSelected
+                                ? prev.filter((id) => id !== m.id)
+                                : [...prev, m.id]
+                            )
+                          }
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "6px",
+                            padding: "4px 10px",
+                            borderRadius: "20px",
+                            fontSize: "0.8125rem",
+                            cursor: "pointer",
+                            userSelect: "none",
+                            background: isSelected ? "var(--accent-light)" : "var(--bg-surface)",
+                            color: isSelected ? "var(--accent-text)" : "var(--text-muted)",
+                            border: isSelected
+                              ? "1px solid var(--accent-border)"
+                              : "1px solid var(--border-subtle)",
+                            fontWeight: isSelected ? 600 : 400,
+                            transition: "all 0.15s",
+                          }}
+                        >
+                          <span style={{
+                            width: 18, height: 18, borderRadius: "50%",
+                            background: "var(--gradient-avatar)",
+                            color: "var(--blue-text)",
+                            fontSize: 10, fontWeight: 700,
+                            display: "inline-flex", alignItems: "center", justifyContent: "center",
+                            flexShrink: 0,
+                          }}>
+                            {m.name[0]}
+                          </span>
+                          {m.name}
+                          {isSelected && <span style={{ fontSize: 11 }}>✓</span>}
+                        </span>
+                      );
+                    })}
+                    {team.filter((m) => m.id !== Number(form.owner_id)).length === 0 && (
+                      <span style={{ color: "var(--text-muted)", fontSize: "0.8125rem", padding: "4px 2px" }}>
+                        No other team members
+                      </span>
+                    )}
+                  </div>
+                  <p style={{ fontSize: "0.6875rem", color: "var(--text-muted)", margin: "4px 0 0" }}>
+                    Click to toggle. Owner is always a member.
+                    {selectedMemberIds.length > 0 && (
+                      <strong style={{ color: "var(--accent-text)" }}> {selectedMemberIds.length} selected</strong>
+                    )}
+                  </p>
+                </div>
                 <div className={styles.modalActions}>
-                  <button type="button" className={styles.cancelBtn} onClick={() => setShowModal(false)}>Cancel</button>
+                  <button type="button" className={styles.cancelBtn} onClick={() => { setShowModal(false); setSelectedMemberIds([]); }}>Cancel</button>
                   <button type="submit" className={styles.saveBtn} disabled={saving}>
                     {saving ? "Saving…" : "Save Project"}
                   </button>

@@ -61,6 +61,7 @@ const Sidebar = () => {
     { label: "Projects",   path: "/",           icon: "projects" },
     { label: "Customers",  path: "/customers",  icon: "customers" },
     { label: "My Tasks",   path: "/my-tasks",   icon: "tasks" },
+    { label: "Timesheet",  path: "/timesheet",  icon: "timesheet" },
     // Analytics requires effective role >= ADMIN
     ...(effectiveRank >= ROLE_RANK.ADMIN
       ? [{ label: "Analytics", path: "/analytics", icon: "analytics" }]
@@ -68,11 +69,10 @@ const Sidebar = () => {
   ];
 
   const adminViews = [
-    // Users and Reports: ADMIN, LEAD, MANAGER (rank >= MANAGER)
+    // Users: ADMIN, LEAD, MANAGER (rank >= MANAGER)
     ...(effectiveRank >= ROLE_RANK.MANAGER
       ? [
           { label: "Users",   path: "/users",   icon: "users" },
-          { label: "Reports", path: "/reports", icon: "reports" },
         ]
       : []),
     // Access & Groups: ADMIN+ only
@@ -105,8 +105,8 @@ const Sidebar = () => {
     <>
       <div className={styles.sidebar}>
         <div className={styles.logo}>
-          <h2>CYBERARK</h2>
-          <span>Practice Tracker v1.0</span>
+          <h2>EraDesk</h2>
+          <span>by Erasmith · v1.0</span>
           <div className={styles.bellWrap}>
             <NotificationBell />
           </div>

@@ -5,7 +5,7 @@ import { useAuth } from "../context/AuthContext";
 const POLL_INTERVAL_MS  = 60_000;   // 60 seconds
 const IDLE_TIMEOUT_MS   = 10 * 60 * 1000; // 10 minutes
 const THROTTLE_MS       = 1_000;    // activity events fire at most once per second
-const LS_KEY            = "cyberark.autoUpdate";
+const LS_KEY = "eradesk.autoUpdate";
 
 /**
  * useAvailability

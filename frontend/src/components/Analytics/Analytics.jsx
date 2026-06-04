@@ -14,13 +14,13 @@ import {
   getHoursPerPerson,
   getBlockedTasks,
   getStatusBreakdown,
+  getUserTasks,
 } from "../../api";
 import { useError } from "../../context/ErrorContext";
 import { useAuth } from "../../context/AuthContext";
 import PageSkeleton from "../shared/PageSkeleton";
 import EmptyState from "../shared/EmptyState";
 import Sparkline from "../Dashboard/Sparkline";
-import VirtualList from "../shared/VirtualList";
 import Pagination from "../shared/Pagination";
 import { useClientPagination } from "../../hooks/useClientPagination";
 
@@ -74,6 +74,81 @@ function KpiCard({ label, value, sub, color = "#0ea5e9", icon, seed = 0 }) {
 
 const TABS = ["Overview", "Projects", "Team", "Blocked Tasks"];
 
+const STATUS_TASK_COLORS = {
+  "Done":              "#22c55e",
+  "In Progress":       "#3b82f6",
+  "In Testing":        "#14b8a6",
+  "Awaiting Feedback": "#f59e0b",
+  "Blocked":           "#ef4444",
+  "Not Started":       "#6b7280",
+};
+
+/**
+ * Expandable project block inside a utilisation card.
+ * Shows project name + customer, total hours, then each task group
+ * with its subtasks and logged hours.
+ */
+function ProjectTaskBlock({ proj }) {
+  const [open, setOpen] = useState(false);
+  const groups = Object.values(proj.groups);
+
+  return (
+    <div className={styles.projBlock}>
+      {/* Project row — click to expand tasks */}
+      <div
+        className={styles.projRow}
+        onClick={() => setOpen((v) => !v)}
+        role="button"
+        aria-expanded={open}
+      >
+        <span className={styles.projChevron}>{open ? "▾" : "▸"}</span>
+        <span className={styles.projName}>{proj.project_name}</span>
+        <span className={styles.projCustomer}>{proj.customer_name}</span>
+        <span className={styles.projHours}>
+          {proj.totalHours > 0 ? `${proj.totalHours}h` : "—"}
+        </span>
+      </div>
+
+      {/* Task groups + subtasks */}
+      {open && (
+        <div className={styles.groupList}>
+          {groups.map((grp) => (
+            <div key={grp.group_name} className={styles.groupBlock}>
+              <div className={styles.groupName}>{grp.group_name}</div>
+              <div className={styles.subtaskList}>
+                {grp.subtasks.map((s) => {
+                  const sc = STATUS_TASK_COLORS[s.subtask_status] ?? "#6b7280";
+                  return (
+                    <div key={s.subtask_id} className={styles.subtaskRow}>
+                      <span
+                        className={styles.subtaskDot}
+                        style={{ background: sc }}
+                        title={s.subtask_status}
+                      />
+                      <span className={styles.subtaskName}>{s.subtask_name}</span>
+                      <span
+                        className={styles.subtaskStatus}
+                        style={{ color: sc }}
+                      >
+                        {s.subtask_status}
+                      </span>
+                      <span className={styles.subtaskHours}>
+                        {Number(s.hours_logged) > 0
+                          ? `${s.hours_logged}h`
+                          : <span style={{ color: "var(--text-muted)" }}>0h</span>}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function Analytics() {
   const { showError } = useError();
   const { user }      = useAuth();
@@ -96,17 +171,21 @@ export default function Analytics() {
   const [hoursData,  setHoursData]  = useState([]);
   const [blocked,    setBlocked]    = useState([]);
   const [statusBreak,setStatusBreak]= useState([]);
+  const [userTasks,  setUserTasks]  = useState([]);
+  // track which utilisation card is expanded
+  const [expandedUser, setExpandedUser] = useState(null);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [s, c, u, h, b, sb] = await Promise.all([
+      const [s, c, u, h, b, sb, ut] = await Promise.all([
         getAnalyticsSummary(),
         getTaskCompletion(),
         getTeamUtilisation(),
         getHoursPerPerson(),
         getBlockedTasks(),
         getStatusBreakdown(),
+        getUserTasks(),
       ]);
       setSummary(s);
       setCompletion(c);
@@ -114,6 +193,7 @@ export default function Analytics() {
       setHoursData(h);
       setBlocked(b);
       setStatusBreak(sb);
+      setUserTasks(ut);
     } catch (err) {
       showError(err.message);
     } finally {
@@ -128,6 +208,29 @@ export default function Analytics() {
   hoursData.forEach((r) => {
     if (!hoursByUser[r.user_name]) hoursByUser[r.user_name] = [];
     hoursByUser[r.user_name].push(r);
+  });
+
+  // ── User tasks grouped by user → project → task(group) → subtask ─────
+  // Shape: { [user_id]: { [project_id]: { project_name, customer_name, tasks: { [group_id]: { group_name, subtasks: [...] } } } } }
+  const tasksByUser = {};
+  userTasks.forEach((row) => {
+    if (!tasksByUser[row.user_id]) tasksByUser[row.user_id] = {};
+    const uProj = tasksByUser[row.user_id];
+    if (!uProj[row.project_id]) {
+      uProj[row.project_id] = {
+        project_id:    row.project_id,
+        project_name:  row.project_name,
+        customer_name: row.customer_name,
+        totalHours:    0,
+        groups: {},
+      };
+    }
+    const proj = uProj[row.project_id];
+    proj.totalHours = Math.round((proj.totalHours + Number(row.hours_logged)) * 10) / 10;
+    if (!proj.groups[row.group_id]) {
+      proj.groups[row.group_id] = { group_name: row.group_name, subtasks: [] };
+    }
+    proj.groups[row.group_id].subtasks.push(row);
   });
 
   const maxHours = Math.max(...utilisation.map((u) => Number(u.total_hours) || 0), 1);
@@ -281,40 +384,102 @@ export default function Analytics() {
             {/* ── Team tab ──────────────────────────────────────────── */}
             {activeTab === "Team" && (
               <div>
-                {/* Utilisation bars */}
+                {/* Utilisation cards */}
                 <div className={styles.section}>
                   <h2 className={`${styles.sectionTitle} section-heading-accent`}>Team Utilisation</h2>
-                  <VirtualList
-                    items={utilisation}
-                    className={styles.utilisationViewport}
-                    estimateSize={() => 108}
-                    getItemKey={(u) => u.user_id}
-                    renderItem={(u) => {
+                  <div className={styles.utilisationList}>
+                    {utilisation.map((u) => {
                       const hrs = Number(u.total_hours) || 0;
                       const pct = Math.round((hrs / maxHours) * 100);
+                      const utilizationPct = Number(u.utilization_pct) || 0;
+                      const workingHrs  = Number(u.working_hours)  || 0;
+                      const billableHrs = Number(u.billable_hours) || 0;
+                      const leaveHrs    = Number(u.leave_hours)    || 0;
+                      const overtimeHrs = Number(u.overtime_hours) || 0;
+                      const isExpanded  = expandedUser === u.user_id;
+
+                      // Projects and tasks for this user
+                      const userProjectMap = tasksByUser[u.user_id] || {};
+                      const userProjects   = Object.values(userProjectMap);
+
+                      // Role-colored avatar ring
+                      const avatarStyle = (u.role === "ADMIN" || u.role === "MASTER_ADMIN")
+                        ? { borderColor: "#ef4444", boxShadow: "0 0 0 3px rgba(239,68,68,0.15)" }
+                        : u.role === "MANAGER"
+                        ? { borderColor: "#f59e0b", boxShadow: "0 0 0 3px rgba(245,158,11,0.15)" }
+                        : { borderColor: "#0ea5e9", boxShadow: "0 0 0 3px rgba(14,165,233,0.15)" };
+
                       return (
-                        <div className={styles.utilisationCard}>
-                          <div className={styles.utilisationTop}>
-                            <span className={styles.utilisationAvatar}>{u.user_name[0]}</span>
+                        <div
+                          key={u.user_id}
+                          className={`${styles.utilisationCard} ${isExpanded ? styles.utilisationCardExpanded : ""}`}
+                        >
+                          {/* ── Card header — always visible ── */}
+                          <div
+                            className={styles.utilisationTop}
+                            style={{ cursor: "pointer" }}
+                            onClick={() => setExpandedUser(isExpanded ? null : u.user_id)}
+                            role="button"
+                            aria-expanded={isExpanded}
+                          >
+                            <span className={styles.utilisationAvatar} style={avatarStyle}>
+                              {u.user_name[0]}
+                            </span>
                             <div className={styles.utilisationInfo}>
                               <span className={styles.utilisationName}>{u.user_name}</span>
                               <span className={styles.utilisationRole}>{u.role}</span>
                             </div>
-                            <span className={styles.utilisationHours}>{hrs}h</span>
+                            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2 }}>
+                              <span className={styles.utilisationHours}>{hrs}h</span>
+                              {utilizationPct > 0 && (
+                                <span style={{ fontSize: "0.6875rem", color: "#22c55e", fontWeight: 700 }}>
+                                  {utilizationPct}% billable
+                                </span>
+                              )}
+                            </div>
+                            <span className={styles.expandChevron} aria-hidden="true">
+                              {isExpanded ? "▲" : "▼"}
+                            </span>
                           </div>
+
                           <Bar pct={pct} color="#0ea5e9" height={6} />
+
+                          {/* Hours breakdown pills */}
+                          {(workingHrs > 0 || billableHrs > 0 || leaveHrs > 0 || overtimeHrs > 0) && (
+                            <div style={{ display: "flex", gap: 10, flexWrap: "wrap", fontSize: "0.6875rem", margin: "2px 0" }}>
+                              {workingHrs  > 0 && <span style={{ color: "#3b82f6" }}>⚙ {workingHrs}h working</span>}
+                              {billableHrs > 0 && <span style={{ color: "#22c55e" }}>💰 {billableHrs}h billable</span>}
+                              {overtimeHrs > 0 && <span style={{ color: "#f59e0b" }}>⏰ {overtimeHrs}h OT</span>}
+                              {leaveHrs    > 0 && <span style={{ color: "#6b7280" }}>🌴 {leaveHrs}h leave</span>}
+                            </div>
+                          )}
+
+                          {/* Summary counts */}
                           <div className={styles.utilisationMeta}>
-                            <span>{u.projects_worked ?? 0} projects</span>
+                            <span>{u.projects_count ?? 0} projects</span>
                             <span>{u.assigned_subtasks ?? 0} tasks</span>
                             <span style={{ color: "#22c55e" }}>{u.completed_subtasks ?? 0} done</span>
                             {Number(u.blocked_subtasks) > 0 && (
                               <span style={{ color: "#ef4444" }}>{u.blocked_subtasks} blocked</span>
                             )}
                           </div>
+
+                          {/* ── Expandable detail ── */}
+                          {isExpanded && (
+                            <div className={styles.expandBody}>
+                              {userProjects.length === 0 ? (
+                                <p className={styles.expandEmpty}>No assigned tasks found.</p>
+                              ) : (
+                                userProjects.map((proj) => (
+                                  <ProjectTaskBlock key={proj.project_id} proj={proj} />
+                                ))
+                              )}
+                            </div>
+                          )}
                         </div>
                       );
-                    }}
-                  />
+                    })}
+                  </div>
                 </div>
 
                 {/* Hours per person per project */}
@@ -354,7 +519,7 @@ export default function Analytics() {
                         })}
                         {hoursPag.totalItems === 0 && (
                           <tr><td colSpan={6} className={styles.empty}>
-                            No hours logged yet. Use the Reports page to upload timesheets.
+                            No hours logged yet. Add time entries in the Timesheet page.
                           </td></tr>
                         )}
                       </tbody>

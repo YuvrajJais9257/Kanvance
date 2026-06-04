@@ -97,11 +97,17 @@
 }
 
 .logoImg {
-  height: 56px;
+  height: 72px;
   width: auto;
   object-fit: contain;
   object-position: left center;
   user-select: none;
+  /* The PNG has a dark background — screen blend makes dark pixels
+     transparent so only the coloured logo mark and text show through */
+  mix-blend-mode: screen;
+  /* Boost brightness slightly so the dark-navy text in the PNG
+     becomes visible against the panel background */
+  filter: brightness(1.8) contrast(1.1);
 }
 
 .tagline {

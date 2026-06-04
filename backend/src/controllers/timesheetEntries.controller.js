@@ -135,10 +135,57 @@ exports.create = async (req, res, next) => {
       return res.status(404).json({ error: "Subtask not found" });
     }
 
-    // Check user is assigned to this subtask
+    // Check user is effectively assigned to this subtask.
+    // Mirrors the four-branch logic in the grid query exactly:
+    //   1. Direct Active_Assignment in task_assignments
+    //   2. Task-level inherited: activity_groups.assignee_id = userId
+    //   3. Subtask-level: subtasks.assignee_id = userId (legacy column)
+    //   4. Project-level fallback: project owner when subtask has no assignee
     const [[assignment]] = await pool.execute(
-      "SELECT id FROM task_assignments WHERE user_id = ? AND subtask_id = ?",
-      [userId, subtaskId],
+      `SELECT 1
+       FROM subtasks s
+       JOIN activity_groups ag ON ag.id = s.group_id
+       JOIN projects p         ON p.id  = ag.project_id
+       WHERE s.id = ?
+         AND (
+           -- Branch 1: direct active assignment
+           EXISTS (
+             SELECT 1 FROM task_assignments ta
+             WHERE ta.subtask_id = s.id
+               AND ta.user_id = ?
+               AND ta.unassigned_date IS NULL
+           )
+           OR
+           -- Branch 2: task-level inherited (ag.assignee_id)
+           (
+             ag.assignee_id = ?
+             AND NOT EXISTS (
+               SELECT 1 FROM task_assignments ta2
+               WHERE ta2.subtask_id = s.id AND ta2.unassigned_date IS NULL
+             )
+           )
+           OR
+           -- Branch 3: subtask-level direct (legacy s.assignee_id)
+           (
+             s.assignee_id = ?
+             AND NOT EXISTS (
+               SELECT 1 FROM task_assignments ta3
+               WHERE ta3.subtask_id = s.id AND ta3.unassigned_date IS NULL
+             )
+           )
+           OR
+           -- Branch 4: project-level fallback (owner, subtask unassigned)
+           (
+             p.owner_id = ?
+             AND s.assignee_id IS NULL
+             AND NOT EXISTS (
+               SELECT 1 FROM task_assignments ta4
+               WHERE ta4.subtask_id = s.id AND ta4.unassigned_date IS NULL
+             )
+           )
+         )
+       LIMIT 1`,
+      [subtaskId, userId, userId, userId, userId],
     );
     if (!assignment) {
       return res.status(403).json({
@@ -271,13 +318,13 @@ exports.grid = async (req, res, next) => {
       }
       const subtask = task.subtasks.get(row.subtask_id);
 
-      // Entry level — only push when a real entry exists (LEFT JOIN may yield nulls)
       if (row.entry_id != null) {
         subtask.entries.push({
           entry_id: row.entry_id,
           date: row.date,
           hours_logged: row.hours_logged,
-          billable_hours: row.billable_hours,
+          time_type: row.time_type,
+          remarks: row.remarks,
         });
       }
     }

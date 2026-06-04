@@ -114,15 +114,16 @@ exports.grid = async ({ userId, dateFrom, dateTo }) => {
        te.time_type,
        te.remarks
      FROM (
-       -- Branch 1: Direct Active_Assignments
+       -- Branch 1: Direct Active_Assignment in task_assignments
        SELECT subtask_id, user_id, 'direct' AS source
        FROM task_assignments
        WHERE user_id = ? AND unassigned_date IS NULL
 
        UNION
 
-       -- Branch 2: Task-level inherited — subtasks with no Active_Assignment
-       --           where the parent task's assignee_id matches userId
+       -- Branch 2: Task-level inherited via activity_groups.assignee_id.
+       --           Applies when the task is assigned to userId but no
+       --           task_assignments row exists for any user on this subtask.
        SELECT s.id AS subtask_id, ag.assignee_id AS user_id, 'task_inherited' AS source
        FROM subtasks s
        JOIN activity_groups ag ON ag.id = s.group_id
@@ -134,14 +135,28 @@ exports.grid = async ({ userId, dateFrom, dateTo }) => {
 
        UNION
 
-       -- Branch 3: Project-level inherited — subtasks with no Active_Assignment
-       --           and no task assignee where the project owner matches userId
+       -- Branch 3: subtasks.assignee_id (legacy direct column on the subtask)
+       --           Used when a subtask is explicitly assigned via the old path.
+       SELECT s.id AS subtask_id, s.assignee_id AS user_id, 'subtask_assignee' AS source
+       FROM subtasks s
+       WHERE s.assignee_id = ?
+         AND NOT EXISTS (
+           SELECT 1 FROM task_assignments ta2
+           WHERE ta2.subtask_id = s.id AND ta2.unassigned_date IS NULL
+         )
+
+       UNION
+
+       -- Branch 4: Project-level fallback — project owner inherits all
+       --           subtasks that have no explicit assignee anywhere.
+       --           Matches the My Tasks model: p.owner_id = userId AND
+       --           s.assignee_id IS NULL (no ag.assignee_id restriction).
        SELECT s.id AS subtask_id, p.owner_id AS user_id, 'project_inherited' AS source
        FROM subtasks s
        JOIN activity_groups ag ON ag.id = s.group_id
        JOIN projects p         ON p.id  = ag.project_id
        WHERE p.owner_id = ?
-         AND ag.assignee_id IS NULL
+         AND s.assignee_id IS NULL
          AND NOT EXISTS (
            SELECT 1 FROM task_assignments ta2
            WHERE ta2.subtask_id = s.id AND ta2.unassigned_date IS NULL
@@ -155,7 +170,7 @@ exports.grid = async ({ userId, dateFrom, dateTo }) => {
        AND te.user_id    = effective_assignments.user_id
        AND te.date BETWEEN ? AND ?
      ORDER BY p.name ASC, ag.position ASC, s.position ASC, te.date ASC`,
-    [userId, userId, userId, dateFrom, dateTo],
+    [userId, userId, userId, userId, dateFrom, dateTo],
   );
   return rows;
 };

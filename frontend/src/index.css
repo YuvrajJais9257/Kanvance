@@ -138,20 +138,24 @@ body {
   overflow: hidden;
 }
 
-/* Main pane beside fixed 260px sidebar */
+/* Main pane beside sidebar — width driven by CSS var set by Sidebar.jsx */
 .app-page {
-  margin-left: 260px;
-  height: 100vh;
-  overflow: hidden;
-}
-
-/* Full-page scroll (pagination, analytics tables) */
-.app-page-scroll {
-  margin-left: 260px;
+  margin-left: var(--sidebar-width, 260px);
   height: 100vh;
   overflow-x: hidden;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+  transition: margin-left 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Full-page scroll variant (analytics, reports, etc.) */
+.app-page-scroll {
+  margin-left: var(--sidebar-width, 260px);
+  height: 100vh;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  transition: margin-left 0.22s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 @media (max-width: 900px) {

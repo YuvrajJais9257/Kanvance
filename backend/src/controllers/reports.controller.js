@@ -471,7 +471,7 @@ async function queryEffortVariance(projectId, dateStart, dateEnd) {
        p.name                                                        AS project_name,
        COALESCE(p.estimated_hours, 0)                                AS estimated_hours,
        ROUND(COALESCE(SUM(te.hours_logged),  0), 2)                  AS actual_hours,
-       ROUND(COALESCE(SUM(te.billable_hours),0), 2)                  AS billable_hours,
+       ROUND(COALESCE(SUM(CASE WHEN te.time_type = 'Billable' THEN te.hours_logged ELSE 0 END), 0), 2) AS billable_hours,
        ROUND(COALESCE(SUM(te.hours_logged),  0) -
              COALESCE(p.estimated_hours, 0),                      2) AS variance
      FROM projects p
@@ -501,9 +501,9 @@ async function queryUserEffort() {
        u.id                                                          AS user_id,
        u.name                                                        AS user_name,
        ROUND(COALESCE(SUM(te.hours_logged),   0), 2)                 AS total_hours_logged,
-       ROUND(COALESCE(SUM(te.billable_hours), 0), 2)                 AS total_billable_hours,
+       ROUND(COALESCE(SUM(CASE WHEN te.time_type = 'Billable' THEN te.hours_logged ELSE 0 END), 0), 2) AS total_billable_hours,
        ROUND(
-         COALESCE(SUM(te.billable_hours), 0) /
+         COALESCE(SUM(CASE WHEN te.time_type = 'Billable' THEN te.hours_logged ELSE 0 END), 0) /
          NULLIF(COALESCE(SUM(te.hours_logged), 0), 0) * 100
        , 1)                                                          AS utilization_pct,
        COUNT(DISTINCT ag.project_id)                                 AS projects_contributed

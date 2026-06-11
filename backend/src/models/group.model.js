@@ -1,5 +1,29 @@
 const pool = require("../config/db");
 
+exports.getById = async (id) => {
+  const [[group]] = await pool.execute(
+    `SELECT
+       ag.id,
+       ag.project_id,
+       ag.name,
+       ag.position,
+       ag.estimated_hours,
+       ag.assignee_id,
+       (SELECT ROUND(COALESCE(SUM(te.hours_logged), 0), 2)
+        FROM timesheet_entries te
+        JOIN subtasks s2 ON s2.id = te.subtask_id
+        WHERE s2.group_id = ag.id) AS actual_hours_logged,
+       (SELECT ROUND(COALESCE(SUM(te.hours_logged), 0) - COALESCE(ag.estimated_hours, 0), 2)
+        FROM timesheet_entries te
+        JOIN subtasks s2 ON s2.id = te.subtask_id
+        WHERE s2.group_id = ag.id) AS variance
+     FROM activity_groups ag
+     WHERE ag.id = ?`,
+    [id]
+  );
+  return group ?? null;
+};
+
 exports.create = async (projectId, name, position) => {
   const [result] = await pool.execute(
     "INSERT INTO activity_groups (project_id, name, position) VALUES (?, ?, ?)",
@@ -9,6 +33,7 @@ exports.create = async (projectId, name, position) => {
 };
 
 // A-2 / B-6 fix: only update fields that are provided
+// Requirement 4.1: extended to support assignee_id column (task-level assignment)
 exports.update = async (id, data) => {
   const setClauses = [];
   const values = [];
@@ -20,6 +45,11 @@ exports.update = async (id, data) => {
   if ("position" in data && data.position != null) {
     setClauses.push("position = ?");
     values.push(data.position);
+  }
+  // assignee_id is nullable — allow explicit null to clear the assignment
+  if ("assignee_id" in data) {
+    setClauses.push("assignee_id = ?");
+    values.push(data.assignee_id ?? null);
   }
 
   if (!setClauses.length) return;

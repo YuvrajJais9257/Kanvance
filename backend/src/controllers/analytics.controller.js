@@ -4,14 +4,6 @@
 const AnalyticsModel = require("../models/analytics.model");
 const { getEffectiveRole } = require("../middlewares/requireRole");
 
-const ROLE_RANK = { MEMBER: 1, MANAGER: 2, ADMIN: 3, MASTER_ADMIN: 4 };
-
-/** Returns true when the effective role is below ADMIN (i.e. MEMBER or MANAGER). */
-function isMemberLevel(session) {
-  const role = getEffectiveRole(session);
-  return (ROLE_RANK[role] ?? 1) < ROLE_RANK.ADMIN;
-}
-
 // GET /api/analytics/summary
 exports.summary = async (req, res, next) => {
   try {
@@ -22,72 +14,35 @@ exports.summary = async (req, res, next) => {
 // GET /api/analytics/task-completion
 exports.taskCompletion = async (req, res, next) => {
   try {
-    const userId = req.session.userId;
-    const data = await AnalyticsModel.taskCompletionByProject();
-    if (isMemberLevel(req.session)) {
-      const filtered = data.filter((p) =>
-        p.owner_id === userId ||
-        // will be further filtered by project visibility — approximate here
-        true // full filter is enforced at project level; show their assigned ones
-      );
-      // Re-use project visibility: only return projects where user is owner or has subtasks
-      const pool = require("../config/db");
-      const [assigned] = await pool.execute(
-        `SELECT DISTINCT ag.project_id FROM subtasks s
-         JOIN activity_groups ag ON ag.id = s.group_id
-         WHERE s.assignee_id = ?`,
-        [userId]
-      );
-      const assignedIds = new Set(assigned.map((r) => r.project_id));
-      return res.json(data.filter((p) => assignedIds.has(p.project_id)));
-    }
-    res.json(data);
+    res.json(await AnalyticsModel.taskCompletionByProject());
   } catch (err) { next(err); }
 };
 
 // GET /api/analytics/team-utilisation
 exports.teamUtilisation = async (req, res, next) => {
   try {
-    const userId = req.session.userId;
-    const data   = await AnalyticsModel.teamUtilisation();
-    // Below-ADMIN roles only see their own row
-    if (isMemberLevel(req.session)) {
-      return res.json(data.filter((u) => u.user_id === userId));
-    }
-    res.json(data);
+    res.json(await AnalyticsModel.teamUtilisation());
+  } catch (err) { next(err); }
+};
+
+// GET /api/analytics/user-tasks
+exports.userTasks = async (req, res, next) => {
+  try {
+    res.json(await AnalyticsModel.userTasksDetail());
   } catch (err) { next(err); }
 };
 
 // GET /api/analytics/hours-per-person
 exports.hoursPerPerson = async (req, res, next) => {
   try {
-    const userId = req.session.userId;
-    const data   = await AnalyticsModel.hoursPerPersonPerProject();
-    if (isMemberLevel(req.session)) {
-      return res.json(data.filter((r) => r.user_id === userId));
-    }
-    res.json(data);
+    res.json(await AnalyticsModel.hoursPerPersonPerProject());
   } catch (err) { next(err); }
 };
 
 // GET /api/analytics/blocked-tasks
 exports.blockedTasks = async (req, res, next) => {
   try {
-    const userId = req.session.userId;
-    const data   = await AnalyticsModel.blockedTasks();
-    // Below-ADMIN roles only see blocked tasks on their assigned projects
-    if (isMemberLevel(req.session)) {
-      const pool = require("../config/db");
-      const [assigned] = await pool.execute(
-        `SELECT DISTINCT ag.project_id FROM subtasks s
-         JOIN activity_groups ag ON ag.id = s.group_id
-         WHERE s.assignee_id = ?`,
-        [userId]
-      );
-      const assignedIds = new Set(assigned.map((r) => r.project_id));
-      return res.json(data.filter((b) => assignedIds.has(b.project_id)));
-    }
-    res.json(data);
+    res.json(await AnalyticsModel.blockedTasks());
   } catch (err) { next(err); }
 };
 
@@ -110,5 +65,12 @@ exports.hoursPerDay = async (req, res, next) => {
   try {
     const days = Math.min(365, Math.max(7, Number(req.query.days) || 30));
     res.json(await AnalyticsModel.hoursPerDay(days));
+  } catch (err) { next(err); }
+};
+
+// GET /api/analytics/start-delay
+exports.startDelay = async (req, res, next) => {
+  try {
+    res.json(await AnalyticsModel.startDelayByUser());
   } catch (err) { next(err); }
 };

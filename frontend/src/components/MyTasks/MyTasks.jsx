@@ -82,7 +82,9 @@ export default function MyTasks() {
       getTeam()
         .then((t) => {
           setTeam(t);
-          if (t.length > 0) setSelectedMember(t[0]);
+          // Default to the logged-in user's own tab, not the first alphabetically
+          const self = t.find((m) => m.id === user?.id) ?? t[0];
+          if (self) setSelectedMember(self);
         })
         .catch((err) => showError(err.message));
     } else {

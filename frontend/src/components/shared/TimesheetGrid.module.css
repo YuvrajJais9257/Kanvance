@@ -1,0 +1,496 @@
+/* ── TimesheetGrid ─────────────────────────────────────────── */
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 24px;
+  background: var(--bg-surface);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-subtle);
+}
+
+/* ── Header ── */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-heading);
+}
+
+.weekInfo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.weekLabel {
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+  padding: 6px 12px;
+  background: var(--bg-input);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+}
+
+.collapseAllBtn {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-default);
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 5px 12px;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: var(--transition-fast);
+  white-space: nowrap;
+}
+
+.collapseAllBtn:hover {
+  background: var(--bg-hover);
+  color: var(--text-secondary);
+  border-color: var(--border-strong);
+}
+
+/* ── Grid wrapper — horizontal scroll ── */
+.gridWrapper {
+  overflow-x: auto;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+}
+
+.grid {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+  /* Minimum width keeps the table readable before scrolling kicks in */
+  min-width: 860px;
+}
+
+/* ── Sticky header row ── */
+.grid thead {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: var(--bg-input);
+}
+
+.grid th {
+  padding: 10px 10px;
+  text-align: left;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  border-bottom: 2px solid var(--border-default);
+  border-right: 1px solid var(--border-subtle);
+  white-space: nowrap;
+}
+
+/* Sticky label columns */
+.thProject {
+  width: 148px;
+  min-width: 148px;
+  position: sticky;
+  left: 0;
+  z-index: 21;
+  background: var(--bg-input);
+}
+
+.thTask {
+  width: 120px;
+  min-width: 120px;
+  position: sticky;
+  left: 148px;
+  z-index: 21;
+  background: var(--bg-input);
+}
+
+.thSubtask {
+  width: 148px;
+  min-width: 148px;
+  position: sticky;
+  left: 268px;
+  z-index: 21;
+  background: var(--bg-input);
+  /* Right shadow to separate label cols from day cols */
+  box-shadow: 4px 0 8px rgba(0,0,0,0.25);
+}
+
+.dayHeader {
+  min-width: 88px;
+  text-align: center;
+  padding: 8px 6px;
+}
+
+.dayName {
+  font-weight: 700;
+  color: var(--text-primary);
+  font-size: 0.75rem;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.dayDate {
+  font-size: 0.6875rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+
+/* ── Shared td base ── */
+.grid td {
+  padding: 0;
+  border-right: 1px solid var(--border-subtle);
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  vertical-align: middle;
+  color: var(--text-primary);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   PROJECT ROW
+   ───────────────────────────────────────────────────────────── */
+.projectRow {
+  cursor: pointer;
+  background: rgba(14, 165, 233, 0.06);
+  border-top: 2px solid var(--border-default);
+  transition: background 0.12s;
+}
+
+.projectRow:hover {
+  background: rgba(14, 165, 233, 0.1);
+}
+
+.projectRow td {
+  border-bottom: 1px solid var(--border-default);
+}
+
+.projectCell {
+  padding: 9px 12px;
+  position: sticky;
+  left: 0;
+  z-index: 10;
+  background: rgba(14, 165, 233, 0.08);
+  font-weight: 700;
+  color: var(--accent-text);
+  font-size: 0.8125rem;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  /* table cells don't support position:sticky natively in all browsers
+     — the wrapper handles horizontal scroll */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 416px; /* project + task + subtask combined */
+}
+
+.projectName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.collapsedHours {
+  font-size: 0.6875rem;
+  color: var(--accent-text);
+  background: rgba(14, 165, 233, 0.15);
+  border: 1px solid rgba(14, 165, 233, 0.25);
+  padding: 1px 7px;
+  border-radius: var(--radius-full);
+  font-weight: 600;
+  flex-shrink: 0;
+  margin-left: 4px;
+}
+
+.projectDayCell {
+  background: rgba(14, 165, 233, 0.04);
+  text-align: center;
+  padding: 9px 6px;
+}
+
+.projDayTotal {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--accent-text);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   TASK ROW
+   ───────────────────────────────────────────────────────────── */
+.taskRow {
+  cursor: pointer;
+  background: rgba(255,255,255,0.025);
+  transition: background 0.12s;
+}
+
+.taskRow:hover {
+  background: rgba(255,255,255,0.045);
+}
+
+.taskIndentCell {
+  width: 148px;
+  min-width: 148px;
+  position: sticky;
+  left: 0;
+  z-index: 9;
+  background: var(--bg-surface);
+}
+
+.taskCell {
+  padding: 8px 10px;
+  position: sticky;
+  left: 148px;
+  z-index: 9;
+  background: rgba(255,255,255,0.025);
+  font-weight: 600;
+  color: var(--text-heading);
+  font-size: 0.8125rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 268px;
+}
+
+.taskChevron {
+  font-size: 0.6875rem;
+  color: var(--text-muted);
+  margin-right: 6px;
+  display: inline-block;
+  width: 10px;
+}
+
+.taskName {
+  /* inline — sits next to chevron */
+}
+
+.taskDayCell {
+  background: rgba(255,255,255,0.015);
+  text-align: center;
+  padding: 8px 6px;
+}
+
+.taskDayTotal {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   SUBTASK ROW
+   ───────────────────────────────────────────────────────────── */
+.subtaskRow {
+  transition: background 0.1s;
+}
+
+.subtaskRow:hover {
+  background: var(--accent-light);
+}
+
+.subtaskRow:hover td {
+  /* Ensure all cells including sticky ones pick up the hover */
+  background: var(--accent-light) !important;
+}
+
+.subtaskIndentCell {
+  /* spans project + task columns (colSpan=2) */
+  position: sticky;
+  left: 0;
+  z-index: 9;
+  background: var(--bg-surface);
+  width: 268px;
+  min-width: 268px;
+}
+
+.subtaskCell {
+  padding: 8px 10px 8px 14px;
+  position: sticky;
+  left: 268px;
+  z-index: 9;
+  background: var(--bg-surface);
+  color: var(--text-secondary);
+  font-size: 0.8125rem;
+  box-shadow: 4px 0 8px rgba(0,0,0,0.2);
+  word-break: break-word;
+  min-width: 148px;
+  max-width: 148px;
+}
+
+.subtaskRow:hover .subtaskCell,
+.subtaskRow:hover .subtaskIndentCell {
+  background: var(--accent-light) !important;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   DAY CELLS
+   ───────────────────────────────────────────────────────────── */
+.dayCell {
+  min-width: 88px;
+  text-align: center;
+  padding: 6px 4px;
+  cursor: text;
+}
+
+/* ── Chevron shared ── */
+.chevron {
+  font-size: 0.6875rem;
+  color: var(--text-muted);
+  flex-shrink: 0;
+  width: 12px;
+  display: inline-block;
+}
+
+/* ── Hours display ── */
+.hoursStack {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  align-items: center;
+}
+
+.totalHours {
+  font-weight: 700;
+  color: var(--accent-text);
+  font-size: 0.875rem;
+}
+
+.emptyCell {
+  color: rgba(100, 116, 139, 0.3);
+  font-size: 0.9375rem;
+  transition: color 0.12s;
+}
+
+td:hover .emptyCell {
+  color: rgba(100, 116, 139, 0.7);
+}
+
+/* ── Delete button ── */
+.deleteEntryBtn {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--danger-light);
+  border: 1px solid var(--danger-border);
+  color: var(--danger-text);
+  font-size: 10px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  padding: 0;
+  cursor: pointer;
+  transition: opacity 0.12s;
+}
+
+td:hover .deleteEntryBtn {
+  opacity: 1;
+}
+
+/* ── Inline edit ── */
+.inlineEdit {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  align-items: center;
+}
+
+.inlineInput {
+  width: 58px;
+  padding: 3px 5px;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  text-align: center;
+  background: var(--bg-input);
+  border: 1.5px solid var(--accent);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  outline: none;
+  box-shadow: 0 0 0 2px var(--accent-glow);
+}
+
+.inlineInput::-webkit-inner-spin-button,
+.inlineInput::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.inlineSelect {
+  width: 76px;
+  font-size: 0.6875rem;
+  padding: 2px 4px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  outline: none;
+  cursor: pointer;
+}
+
+/* ── Footer ── */
+.footerRow {
+  background: var(--bg-surface);
+  border-top: 2px solid var(--border-default);
+}
+
+.footerLabel {
+  padding: 9px 12px;
+  color: var(--text-muted);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  position: sticky;
+  left: 0;
+  z-index: 10;
+  background: var(--bg-surface);
+}
+
+.footerCell {
+  padding: 9px 6px;
+  text-align: center;
+  font-weight: 700;
+  font-size: 0.8125rem;
+  color: var(--accent-text);
+}
+
+.footerRow td {
+  border-bottom: none;
+}
+
+/* ── Empty state ── */
+.emptyState {
+  text-align: center;
+  padding: 60px 24px;
+  color: var(--text-muted);
+}
+
+.emptyState p { margin: 0; font-size: 1rem; }
+.hint { font-size: 0.875rem; margin-top: 8px !important; }
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+  .grid { font-size: 0.75rem; }
+  .dayHeader { min-width: 68px; }
+  .dayCell   { min-width: 68px; }
+  .thProject, .taskIndentCell { width: 110px; min-width: 110px; }
+  .thTask    { width: 96px;  min-width: 96px;  left: 110px; }
+  .thSubtask { width: 110px; min-width: 110px; left: 206px; }
+  .subtaskCell, .subtaskIndentCell { min-width: 110px; max-width: 110px; }
+  .taskCell  { left: 110px; max-width: 206px; }
+}

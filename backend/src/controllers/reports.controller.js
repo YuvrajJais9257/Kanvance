@@ -264,6 +264,15 @@ exports.generate = async (req, res, next) => {
         );
         break;
 
+      case "effort_variance":
+        reportName = "Effort Variance Report";
+        data = await queryEffortVariance(
+          project_ids && project_ids.length === 1 ? project_ids[0] : null,
+          start,
+          end
+        );
+        break;
+
       default:
         return res.status(400).json({ error: "Invalid report_type" });
     }
@@ -289,7 +298,7 @@ exports.generate = async (req, res, next) => {
 // Helper: Generate Excel report
 async function generateExcelReport(reportName, data, dateRange) {
   const wb = new ExcelJS.Workbook();
-  wb.creator = "CyberArk Practice Tracker";
+  wb.creator = "EraDesk";
   wb.created = new Date();
 
   const ws = wb.addWorksheet(reportName);
@@ -428,6 +437,115 @@ exports.commitTimeLogs = async (req, res, next) => {
       skipped:       result.skipped ?? 0,
       rejected_rows: rejectedRowDetails,
     });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// ── Internal query helpers ────────────────────────────────────────────────
+
+/**
+ * Query per-project effort variance data.
+ * @param {number|null} projectId  Optional project filter
+ * @param {string|null} dateStart  Optional date range start (YYYY-MM-DD)
+ * @param {string|null} dateEnd    Optional date range end (YYYY-MM-DD)
+ */
+async function queryEffortVariance(projectId, dateStart, dateEnd) {
+  const conditions = [];
+  const params = [];
+
+  if (projectId != null) {
+    conditions.push("p.id = ?");
+    params.push(projectId);
+  }
+  if (dateStart && dateEnd) {
+    conditions.push("te.date BETWEEN ? AND ?");
+    params.push(dateStart, dateEnd);
+  }
+
+  const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
+
+  const [rows] = await pool.execute(
+    `SELECT
+       p.id                                                          AS project_id,
+       p.name                                                        AS project_name,
+       COALESCE(p.estimated_hours, 0)                                AS estimated_hours,
+       ROUND(COALESCE(SUM(te.hours_logged),  0), 2)                  AS actual_hours,
+       ROUND(COALESCE(SUM(CASE WHEN te.time_type = 'Billable' THEN te.hours_logged ELSE 0 END), 0), 2) AS billable_hours,
+       ROUND(COALESCE(SUM(te.hours_logged),  0) -
+             COALESCE(p.estimated_hours, 0),                      2) AS variance
+     FROM projects p
+     LEFT JOIN activity_groups ag ON ag.project_id = p.id
+     LEFT JOIN subtasks s         ON s.group_id    = ag.id
+     LEFT JOIN timesheet_entries te ON te.subtask_id = s.id
+     ${where}
+     GROUP BY p.id
+     ORDER BY p.name ASC`,
+    params
+  );
+
+  return rows.map((row) => ({
+    ...row,
+    variance_label:
+      Number(row.variance) < 0 ? "Under Estimate" :
+      Number(row.variance) > 0 ? "Over Estimate"  : "On Track",
+  }));
+}
+
+/**
+ * Query per-user effort summary.
+ */
+async function queryUserEffort() {
+  const [rows] = await pool.execute(
+    `SELECT
+       u.id                                                          AS user_id,
+       u.name                                                        AS user_name,
+       ROUND(COALESCE(SUM(te.hours_logged),   0), 2)                 AS total_hours_logged,
+       ROUND(COALESCE(SUM(CASE WHEN te.time_type = 'Billable' THEN te.hours_logged ELSE 0 END), 0), 2) AS total_billable_hours,
+       ROUND(
+         COALESCE(SUM(CASE WHEN te.time_type = 'Billable' THEN te.hours_logged ELSE 0 END), 0) /
+         NULLIF(COALESCE(SUM(te.hours_logged), 0), 0) * 100
+       , 1)                                                          AS utilization_pct,
+       COUNT(DISTINCT ag.project_id)                                 AS projects_contributed
+     FROM users u
+     LEFT JOIN timesheet_entries te ON te.user_id = u.id
+     LEFT JOIN subtasks s           ON s.id = te.subtask_id
+     LEFT JOIN activity_groups ag   ON ag.id = s.group_id
+     WHERE u.deleted_at IS NULL AND u.status = 'active'
+     GROUP BY u.id
+     ORDER BY total_hours_logged DESC`
+  );
+  return rows;
+}
+
+// GET /api/reports/effort-variance
+exports.effortVariance = async (req, res, next) => {
+  try {
+    const projectId = req.query.project_id ? Number(req.query.project_id) : null;
+
+    // 404 if project_id provided but project doesn't exist
+    if (projectId != null) {
+      const [[project]] = await pool.execute(
+        "SELECT id FROM projects WHERE id = ?",
+        [projectId]
+      );
+      if (!project) {
+        return res.status(404).json({ error: "Project not found" });
+      }
+    }
+
+    const data = await queryEffortVariance(projectId, null, null);
+    res.json(data);
+  } catch (err) {
+    next(err);
+  }
+};
+
+// GET /api/reports/user-effort
+exports.userEffort = async (req, res, next) => {
+  try {
+    const data = await queryUserEffort();
+    res.json(data);
   } catch (err) {
     next(err);
   }

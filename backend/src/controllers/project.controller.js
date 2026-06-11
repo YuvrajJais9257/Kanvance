@@ -1,5 +1,5 @@
-const ProjectService    = require("../services/project.service");
-const requireRole       = require("../middlewares/requireRole");
+const ProjectService = require("../services/project.service");
+const requireRole = require("../middlewares/requireRole");
 const NotificationModel = require("../models/notification.model");
 
 // Only ADMIN can create projects or change the owner (project assignment).
@@ -24,7 +24,7 @@ function isChangingOwner(req, project) {
 exports.getAll = async (req, res, next) => {
   try {
     const { page, limit } = req.query;
-    const role   = req.session.userRole ?? "MEMBER";
+    const role = req.session.userRole ?? "MEMBER";
     const userId = req.session.userId;
 
     // ADMIN sees all projects; everyone else only sees projects they own
@@ -34,31 +34,37 @@ exports.getAll = async (req, res, next) => {
     } else {
       res.json(await ProjectService.getAllForUser({ page, limit }, userId));
     }
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 };
 
 exports.getById = async (req, res, next) => {
   try {
     const project = await ProjectService.getById(req.params.id);
-    const role    = req.session.userRole ?? "MEMBER";
-    const userId  = req.session.userId;
+    const role = req.session.userRole ?? "MEMBER";
+    const userId = req.session.userId;
 
     // Non-admins can only view projects they own or are assigned to
     if (role !== "ADMIN") {
-      const isOwner    = project.owner_id === userId;
+      const isOwner = project.owner_id === userId;
       const [assigned] = await require("../config/db").execute(
         `SELECT 1 FROM subtasks s
          JOIN activity_groups ag ON ag.id = s.group_id
          WHERE ag.project_id = ? AND s.assignee_id = ? LIMIT 1`,
-        [project.id, userId]
+        [project.id, userId],
       );
       if (!isOwner && assigned.length === 0) {
-        return res.status(403).json({ error: "You do not have access to this project" });
+        return res
+          .status(403)
+          .json({ error: "You do not have access to this project" });
       }
     }
 
     res.json(project);
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 };
 
 exports.create = async (req, res, next) => {
@@ -66,23 +72,54 @@ exports.create = async (req, res, next) => {
     // Only ADMIN and LEAD can create projects (which includes setting the owner/assignee)
     const role = req.session.userRole ?? "MEMBER";
     if (!["ADMIN", "LEAD"].includes(role)) {
-      return res.status(403).json({ error: "Only admins and leads can create projects" });
+      return res
+        .status(403)
+        .json({ error: "Only admins and leads can create projects" });
     }
+
+    // Validate initial_member_ids if provided
+    if (req.body.initial_member_ids !== undefined) {
+      if (!Array.isArray(req.body.initial_member_ids)) {
+        return res
+          .status(400)
+          .json({ error: "initial_member_ids must be an array" });
+      }
+      // Ensure all are valid user IDs (numbers)
+      if (
+        !req.body.initial_member_ids.every(
+          (id) => Number.isInteger(id) && id > 0,
+        )
+      ) {
+        return res
+          .status(400)
+          .json({ error: "All member IDs must be positive integers" });
+      }
+    }
+
     const id = await ProjectService.create(req.body);
-    res.status(201).json({ id });
-  } catch (err) { next(err); }
+    const project = await ProjectService.getById(id);
+    res.status(201).json(project);
+  } catch (err) {
+    next(err);
+  }
 };
 
 exports.update = async (req, res, next) => {
   try {
     const project = await ProjectService.getById(req.params.id);
     if (!canModify(req, project)) {
-      return res.status(403).json({ error: "You do not have permission to edit this project" });
+      return res
+        .status(403)
+        .json({ error: "You do not have permission to edit this project" });
     }
     // Only ADMIN and LEAD can reassign the project owner
     const role = req.session.userRole ?? "MEMBER";
     if (!["ADMIN", "LEAD"].includes(role) && isChangingOwner(req, project)) {
-      return res.status(403).json({ error: "Only admins and leads can reassign project ownership" });
+      return res
+        .status(403)
+        .json({
+          error: "Only admins and leads can reassign project ownership",
+        });
     }
     await ProjectService.update(req.params.id, req.body);
 
@@ -92,16 +129,22 @@ exports.update = async (req, res, next) => {
     }
 
     res.json({ updated: true });
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 };
 
 exports.remove = async (req, res, next) => {
   try {
     const project = await ProjectService.getById(req.params.id);
     if (!canModify(req, project)) {
-      return res.status(403).json({ error: "You do not have permission to delete this project" });
+      return res
+        .status(403)
+        .json({ error: "You do not have permission to delete this project" });
     }
     await ProjectService.remove(req.params.id);
     res.json({ deleted: true });
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 };

@@ -5,6 +5,9 @@
 const express = require("express");
 const router = express.Router();
 const ctrl = require("../controllers/reports.controller");
+const requireRole = require("../middlewares/requireRole");
+
+const adminOnly = requireRole("ADMIN", "MASTER_ADMIN");
 
 // All routes require authentication (enforced by requireAuth in server.js)
 
@@ -23,5 +26,9 @@ router.post("/save-hours",         ctrl.saveHours);
 router.post("/preview-time-logs",  ctrl.previewTimeLogs);
 // Step 2: commit after user confirms
 router.post("/commit-time-logs",   ctrl.commitTimeLogs);
+
+// Admin-only analytics endpoints
+router.get("/effort-variance", adminOnly, ctrl.effortVariance);
+router.get("/user-effort",     adminOnly, ctrl.userEffort);
 
 module.exports = router;

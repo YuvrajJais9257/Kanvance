@@ -1543,10 +1543,83 @@
 .attachIcon:focus-visible,
 .flagIcon:focus-visible,
 .assigneeChip:focus-visible,
+.assigneeMultiTrigger:focus-visible,
 .pickerItem:focus-visible {
   outline: none;
   box-shadow: var(--shadow-focus);
 }
+
+/* ── Assignee multi-picker trigger ── */
+.assigneeMultiTrigger {
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+  position: relative;
+  border-radius: 99px;
+  transition: var(--transition-fast);
+}
+
+.assigneeMultiTrigger:hover {
+  box-shadow: 0 0 0 2px var(--accent-border);
+}
+
+/* Scrollable list inside dropdown */
+.ampList {
+  max-height: 200px;
+  overflow-y: auto;
+  padding: 4px 0;
+}
+
+/* Checkmark for selected option */
+.ampCheck {
+  font-size: 11px;
+  color: var(--accent-text);
+  font-weight: 700;
+  flex-shrink: 0;
+  margin-left: 4px;
+}
+
+/* Footer with Clear + Assign buttons */
+.ampFooter {
+  display: flex;
+  gap: 8px;
+  padding: 8px 10px 6px;
+  border-top: 1px solid var(--border-subtle);
+  justify-content: flex-end;
+  background: var(--bg-elevated);
+}
+
+.ampClearBtn {
+  background: none;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 5px 12px;
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+.ampClearBtn:hover {
+  background: var(--bg-hover);
+  color: var(--text-secondary);
+}
+
+.ampSaveBtn {
+  background: var(--gradient-accent);
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--white);
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 5px 14px;
+  cursor: pointer;
+  transition: var(--transition-fast);
+  white-space: nowrap;
+}
+
+.ampSaveBtn:hover { filter: brightness(1.1); }
 
 /* ── Responsive ── */
 @media (max-width: 1200px) {

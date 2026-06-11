@@ -1,6 +1,8 @@
 <div align="center">
 
-# 🛡️ CyberArk Practice Tracker
+<img src="EraDesk.png" width="320" alt="EraDesk" />
+
+# EraDesk
 
 [![React](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev)
 [![Vite](https://img.shields.io/badge/Vite-8-646CFF?style=for-the-badge&logo=vite&logoColor=white)](https://vitejs.dev)
@@ -8,77 +10,93 @@
 [![MySQL](https://img.shields.io/badge/MySQL-8-4479A1?style=for-the-badge&logo=mysql&logoColor=white)](https://mysql.com)
 [![License](https://img.shields.io/badge/License-ISC-blue?style=for-the-badge)](LICENSE)
 
-**A full-stack project management portal built specifically for CyberArk implementation teams.**  
-Track customers, projects, tasks, infrastructure, team availability, and hours — all in one place.
+**Work. Track. Deliver.**
 
-<img src="Screenshots/Dashboard.png" width="900" alt="CyberArk Practice Tracker Dashboard">
+A full-stack internal project management platform built for [Erasmith Technologies](https://erasmith.com) —  
+one tool for projects, customers, tasks, timesheets, infrastructure, and analytics across the entire organisation.
 
 </div>
 
 ---
 
-## ✨ Features
+## About Erasmith
 
-### Core Project Management
-- 🎯 **Project Pipeline** — Manage Implementations, Managed Services, License Renewals, and New Opportunities with real-time progress tracking
-- 👥 **Customer Management** — Full customer profiles with contacts, infrastructure inventory, and document library
-- ✅ **Task Assignment** — Granular subtask tracking with statuses: Not Started → In Progress → In Testing → Awaiting Feedback → Blocked → Done
-- 🚩 **Flag & Escalation System** — Flag blocked tasks with reason, waiting-on, and flag type for instant visibility
-- 📄 **Document Hub** — Upload and link HLDs, LLDs, SOPs, Architecture Diagrams, and more to any project or task
-- 🖥️ **Infrastructure Registry** — Track PVWA, CPM, PSM, Vault, and Jump Server details per customer environment
-- 📊 **Live Dashboard** — At-a-glance stats, "Needs Attention" alerts, and 30-day deadline view
-- 🟢 **Team Availability** — Real-time online/offline status indicators for all team members
-- 🔐 **Secure Auth** — Session-based auth with bcrypt, rate limiting, and protected file serving
-- 🗂️ **My Tasks View** — Personal task queue filtered to the logged-in user
-
-### Hours Tracking & Reporting *(new)*
-- ⏱️ **Automatic Hour Logging** — When a subtask is marked Done, 1 hour is automatically logged to the assignee's record in `time_logs`. No manual entry required.
-- 📤 **Excel Timesheet Upload Pipeline** — 4-step workflow: Download Template → Upload & Parse → Preview & Enrich → Export / Save to DB
-  - **Step 1** — Download a pre-formatted `.xlsx` template with an Instructions sheet
-  - **Step 2** — Upload your filled template; rows are parsed and validated instantly
-  - **Step 3** — Enrich rows against the DB (DB values fill gaps; your uploaded values always win), then preview exactly what will be written before committing:
-    - 🟢 New entries (will be inserted)
-    - 🟡 Conflicting entries (will overwrite existing — shows existing hours and source: `app` or `excel`)
-    - 🔴 Rejected rows (permission violation or unresolvable employee — shown with per-row reason)
-  - **Step 4** — Download the enriched `.xlsx` (always available) and/or click **Confirm & Save** to commit to the database
-- ✅ **Post-Import Summary** — After saving, a modal shows: "Imported X rows — Y new, Z overwritten, W rejected"
-- 🔒 **Role-based Upload Permissions** — Members can only upload rows for themselves; Admins and Managers can upload for any employee
-- 📥 **Dual Source Tracking** — Every `time_logs` entry carries a `source` field (`app` or `excel`) so you always know where hours came from
-- 🔄 **Upsert Logic** — Excel uploads use `INSERT ... ON DUPLICATE KEY UPDATE` on the natural key `(employee_id, project_name, activity_group, date)` — no duplicate rows, no summing, clean overwrites
-
-### Analytics
-- 📈 **Team Utilisation** — Hours per team member now reads from the unified `time_logs` table, reflecting both app-logged and Excel-uploaded hours correctly (previously always showed 0h)
-- 📉 **Task Completion by Project** — Completion percentages per project
-- 🕐 **Hours per Person per Project** — Breakdown of logged hours across projects
-- 🚧 **Blocked Tasks View** — All blocked/awaiting-feedback tasks with context
-- 📆 **Progress Trend** — Project completion trajectory over time
-- 🍩 **Status Breakdown** — Subtask status distribution across the entire portfolio
-- 📅 **Hours per Day** — Activity sparkline for the last N days
+Erasmith has been in the digital transformation space for over 9 years, serving more than 100 customers across geographies with over 90% repeat business. With an 80+ member team, more than 20% senior tech enablers, 100+ certifications, and a Great Place to Work certification — twice — Erasmith needed a platform built to its own standard. EraDesk is that platform.
 
 ---
 
-## 📸 Screenshots
+## ✨ Features
 
-### Dashboard Overview
-<img src="Screenshots/Dashboard.png" width="800" alt="Dashboard">
+### Dashboard & Projects
 
-### Project Management
-<img src="Screenshots/Projects.png" width="800" alt="Projects">
+- 📊 **Live Dashboard** — Stat cards for total projects by type (Implementations, Managed Services, License Renewals, New Opportunities), a Needs Attention panel for At Risk / Delayed / Blocked projects, a 30-day deadline view, and a dismissible critical deadline banner for overdue items
+- 🎯 **Project Pipeline** — Full project list with auto-generated task templates on creation per project type. Project health (On Track → At Risk → Delayed → Completed) is derived automatically from subtask states and deadlines — never manually updated
+- 🗂️ **Project Detail View** — Full task tree (activity groups → subtasks), actual vs. estimated hours with variance, unassigned subtask warnings, and manual statuses (Prospecting, On Hold) that are never auto-overridden
 
-### Task Tracking & Assignment
-| Task Assignment | Flag a Subtask | Task Statuses |
+### Customer Management
+
+- 👥 **Customer Profiles** — Name, industry, CyberArk tenant, region, IDP, SIEM, license type, count, and expiry
+- 📇 **Contacts** — Contact people linked to each customer
+- 📄 **Document Hub** — Upload and link HLDs, LLDs, SOPs, and Architecture Diagrams polymorphically to any customer, project, activity group, or subtask
+- 🖥️ **Infrastructure Registry** — Track server inventory (PVWA, CPM, PSM, Vault, Jump Servers) per customer, linkable to projects, groups, and subtasks
+- 🔗 **Linked Projects** — All projects under a customer visible from the customer profile
+
+### Task Management
+
+- ✅ **6-Stage Subtask Workflows** — Not Started → In Progress → In Testing → Awaiting Feedback → Blocked → Done
+- 👤 **Multi-Assignee Support** — Assign single or multiple users per subtask with full assignment history (Manager+)
+- 🔗 **Effective Assignee Resolution** — Direct assignment → task-level inherited → project owner inherited
+- 🚩 **Flag & Escalation System** — Flag blocked tasks with type, reason, and waiting-on field for instant visibility across the team
+- 📅 **Due Dates** — Per-subtask due dates with drag-to-reorder (position tracking)
+- 🗂️ **My Tasks** — Personal task queue filtered to the logged-in user; managers can view any member's queue via `?member_id=`
+
+### Timesheet & Hours
+
+- ⏱️ **Weekly Timesheet Grid** — Log hours per subtask per day (Mon–Sun navigation) with time type: Billable, Non-billable, Overtime, Holidays, Sick Time, Training, Vacation
+- 👁️ **Team Grid View** — Managers can view the full team's logged hours for any week
+- 📤 **Excel Upload Pipeline** — 4-step workflow:
+  1. Download pre-formatted `.xlsx` template
+  2. Upload and parse the filled template
+  3. Preview enriched rows — 🟢 new (will insert), 🟡 conflicting (will overwrite, shows existing hours and source), 🔴 rejected (permission violation or unresolvable employee, with per-row reason)
+  4. Confirm and save, or download the enriched Excel
+- ✅ **Post-Import Summary** — Imported X rows — Y new, Z updated, W rejected
+- 🔒 **Role-Scoped Uploads** — Members upload only for themselves; Admins and Managers upload for anyone
+
+### Analytics (Admin only)
+
+Four tabs:
+
+- **Overview** — KPI cards (total projects, completed, at risk, delayed, total tasks, completion rate %, blocked count, total hours logged) + subtask status breakdown bar chart + 30-day activity sparkline
+- **Projects** — Completion rates table: customer, project, type, status, progress bar, done/total subtasks, blocked count, due date
+- **Team** — Team utilisation cards showing hours breakdown (working, billable, overtime, leave) and utilisation % per person, with an expandable drill-down into every project → task group → subtask with logged hours. Hours per person per project table with distribution bars
+- **Blocked Tasks** — All blocked and awaiting-feedback tasks with flag type, reason, waiting-on field, and assignee
+
+### Access, Roles & Security
+
+- 🔐 **5-Level Role Hierarchy** — MASTER_ADMIN → ADMIN → MANAGER → LEAD → MEMBER
+- 👥 **Group-Based Privilege Elevation** — User groups elevate effective role beyond base role (e.g., a MEMBER in an ADMIN group gets admin-level access)
+- 👤 **User Management** — Create, edit, deactivate, and soft-delete users with protection (must reassign open tasks before deletion). Role changes immediately invalidate active sessions
+- 🔑 **Access & Groups** — Create and manage user groups with privilege levels; assign and remove group members
+- 🟢 **Real-Time Availability** — Online / Away / Busy / Offline status with optional auto-update on activity; live status dots across team views
+- 🔔 **Notifications** — Deadline alerts surfaced to the right people, with unread badge, critical banner on dashboard, and mark-all-read
+- 🛡️ **Secure Auth** — Session cookies (`httpOnly`, `secure`, `sameSite: strict`), bcrypt, rate limiting (20 req / 15 min per IP), `role_version` invalidation on permission changes, path traversal protection on all file serving routes
+
+---
+
+## 🗺️ Application Routes
+
+| Route | Page | Access |
 |---|---|---|
-| <img src="Screenshots/TaskAssignment.png" width="260" alt="Task Assignment"> | <img src="Screenshots/FlagSubtask.png" width="260" alt="Flag Subtask"> | <img src="Screenshots/Statuses.png" width="260" alt="Statuses"> |
-
-### Customer & Infrastructure
-| Customer List | Customer Profile | Add Infrastructure |
-|---|---|---|
-| <img src="Screenshots/Customers.png" width="260" alt="Customers"> | <img src="Screenshots/CustomerProfile.png" width="260" alt="Customer Profile"> | <img src="Screenshots/AddInfrastrucutre.png" width="260" alt="Add Infrastructure"> |
-
-### Documents & Context
-| Document Upload | Attach Context |
-|---|---|
-| <img src="Screenshots/DocumentUpload.png" width="390" alt="Document Upload"> | <img src="Screenshots/AttachContext.png" width="390" alt="Attach Context"> |
+| `/login` | Login | Public |
+| `/dashboard` | Dashboard | All authenticated users |
+| `/` | Projects | All authenticated users |
+| `/customers` | Customers | All authenticated users |
+| `/my-tasks` | My Tasks | All authenticated users |
+| `/timesheet` | Weekly Timesheet | All authenticated users |
+| `/notifications` | Notifications | All authenticated users |
+| `/users` | User Management | Manager+ |
+| `/access` | Access & Groups | Admin+ |
+| `/analytics` | Analytics KPI Dashboard | Admin+ |
 
 ---
 
@@ -92,19 +110,19 @@ Track customers, projects, tasks, infrastructure, team availability, and hours �
 ### 1. Clone & Install
 
 ```bash
-git clone https://github.com/your-username/cyberark-practice-tracker.git
-cd cyberark-practice-tracker
+git clone https://github.com/erasmith/eradesk.git
+cd eradesk
 
-# Install backend dependencies
+# Backend
 cd backend && npm install
 
-# Install frontend dependencies
+# Frontend
 cd ../frontend && npm install
 ```
 
 ### 2. Configure Environment
 
-**Backend** — create `backend/.env`:
+**`backend/.env`**
 
 ```env
 DB_HOST=localhost
@@ -115,28 +133,26 @@ DB_NAME=project_management
 SESSION_SECRET=your_secret_here
 FRONTEND_URL=http://localhost:5173
 PORT=4000
+USE_TIMESHEET_ENTRIES_AS_SOURCE=true
 ```
 
-**Frontend** — create `frontend/.env`:
+**`frontend/.env`**
 
 ```env
 VITE_API_URL=http://localhost:4000
 ```
 
-### 3. Set Up the Database
+### 3. Database Setup
 
 ```bash
-# Create the base schema (idempotent — safe to re-run)
-mysql -u root -p project_management < backend/schema.sql
-
-# Run migrations in order
-mysql -u root -p project_management < backend/migrations/001_cleanup_unused_schema.sql
-mysql -u root -p project_management < backend/migrations/002_add_audit_and_notifications.sql
-mysql -u root -p project_management < backend/migrations/003_create_time_logs.sql
-
-# (Optional) Seed sample data
-mysql -u root -p project_management < backend/seed.sql
+# Run all migrations in order — each is idempotent and safe to re-run
+node backend/src/migrations/001_analytics_timesheet_refactor.js
+node backend/src/migrations/002_assignment_membership_architecture.js
+node backend/src/migrations/003_timesheet_entries_refactor.js
+node backend/src/migrations/004_fix_task_assignments_unique_key.js
 ```
+
+Each migration script supports `--dry-run` to preview SQL without writing to the database.
 
 ### 4. Run
 
@@ -148,7 +164,7 @@ cd backend && npm run dev
 cd frontend && npm run dev
 ```
 
-Open [http://localhost:5173](http://localhost:5173) in your browser.
+Open [http://localhost:5173](http://localhost:5173).
 
 ---
 
@@ -160,8 +176,8 @@ Open [http://localhost:5173](http://localhost:5173) in your browser.
 | **Backend** | Node.js, Express 5, express-session |
 | **Database** | MySQL 8 (mysql2) |
 | **Auth** | bcrypt, session cookies, rate limiting (express-rate-limit) |
-| **File Uploads** | Multer (auth-protected serving) |
-| **Excel Pipeline** | ExcelJS (template generation, parse, enrich, export) |
+| **File Uploads** | Multer (auth-protected serving, no public static access) |
+| **Excel Pipeline** | ExcelJS (template generation, parse, conflict preview, export) |
 | **Dev Tools** | Nodemon, ESLint |
 
 ---
@@ -169,79 +185,96 @@ Open [http://localhost:5173](http://localhost:5173) in your browser.
 ## 📁 Project Structure
 
 ```
+eradesk/
 ├── backend/
-│   ├── migrations/
-│   │   ├── 001_cleanup_unused_schema.sql
-│   │   ├── 002_add_audit_and_notifications.sql
-│   │   └── 003_create_time_logs.sql        # ← hours tracking table
 │   ├── src/
+│   │   ├── config/         # DB pool
 │   │   ├── controllers/    # Route handlers
+│   │   ├── middlewares/    # Auth, error handling, uploads, role guards
+│   │   ├── migrations/     # Idempotent DDL migrations (run in order)
 │   │   ├── models/         # DB query layer
-│   │   │   └── timeLog.model.js            # ← upsert + conflict preview
 │   │   ├── routers/        # Express route definitions
-│   │   ├── services/       # Business logic
-│   │   │   ├── subtask.service.js          # ← auto-logs 1h on Done
-│   │   │   └── timesheet.service.js        # ← Excel pipeline + conflict preview
-│   │   ├── middlewares/    # Auth, error handling, uploads
-│   │   └── config/         # DB pool, upload config
-│   ├── schema.sql          # Full DB schema (idempotent, IF NOT EXISTS)
-│   ├── seed.sql            # Sample data
-│   └── server.js           # Express app entry point
+│   │   └── services/       # Business logic
+│   │       ├── assignment.service.js   # Multi-assignee sync, bulk assign, distribute
+│   │       ├── subtask.service.js      # Subtask updates, auto-hour logging on Done
+│   │       └── timesheet.service.js   # Excel pipeline, conflict preview, commit
+│   └── server.js           # Express entry point
 └── frontend/
     └── src/
         ├── components/
-        │   ├── Reports/    # ← 4-step Excel pipeline + conflict preview UI
-        │   └── ...         # Dashboard, Projects, Customers, MyTasks, Users, Analytics
-        ├── context/        # Auth & Error context providers
-        ├── hooks/          # useAvailability
-        ├── redux/          # Store + view slice
-        └── api.js          # Centralised API client
+        │   ├── Analytics/      # KPI dashboard — 4 tabs
+        │   ├── Customers/      # Customer profiles, contacts, infra, docs
+        │   ├── Dashboard/      # Summary stats, deadline views
+        │   ├── Login/          # Split-panel login page
+        │   ├── MyTasks/        # Personal task queue
+        │   ├── Notifications/  # Deadline alerts
+        │   ├── Projects/       # Project pipeline, task tree, multi-assign
+        │   ├── Reports/        # Excel upload pipeline UI
+        │   ├── shared/         # Reusable components (PageSkeleton, Pagination, etc.)
+        │   ├── sidebar/        # Navigation, availability, team management
+        │   ├── Timesheet/      # Weekly grid timesheet
+        │   └── Users/          # User management, Access & Groups
+        ├── context/            # Auth & Error providers
+        ├── hooks/              # useAvailability, useClientPagination
+        ├── redux/              # Store + view slice
+        └── api.js              # Centralised API client
 ```
 
 ---
 
-## 🗄️ Database Schema Overview
+## 🗄️ Database Schema
 
 | Table | Purpose |
 |---|---|
-| `users` | Platform users with roles (ADMIN, LEAD, MANAGER, MEMBER) |
-| `user_groups` | Access control tiers (MASTER_ADMIN → MEMBER) |
-| `customers` | Client organisations |
+| `users` | Platform users with roles, status, availability, group membership, and `role_version` |
+| `user_groups` | Access control tiers with privilege levels |
+| `customers` | Client organisations with tenant, IDP, SIEM, and license details |
 | `projects` | Belong to a customer and owner; status auto-derived from subtasks |
-| `activity_groups` | Phase/stage groups within a project |
-| `subtasks` | Individual work items; status drives project health |
+| `project_members` | Explicit project membership for assignment and access control |
+| `activity_groups` | Phase / stage groups within a project |
+| `subtasks` | Individual work items; drives project health and timesheet grid |
+| `task_assignments` | Multi-assignee history per subtask with soft-delete (`unassigned_date`) |
 | `subtask_log` | Audit trail for subtask field changes |
-| `activity_logs` | Legacy hours log (used by report generation) |
-| `time_logs` | **Unified hours ledger** — fed by app auto-log (`source='app'`) and Excel upload (`source='excel'`); natural key `(employee_id, project_name, activity_group, date)` |
-| `timesheet_upload_runs` | Audit trail for Excel uploads |
-| `timesheet_rows` | Parsed + enriched rows from each upload run |
-| `documents` | Files/links per customer |
-| `document_links` | Polymorphic join: document ↔ project/group/subtask |
+| `timesheet_entries` | Hours per user per subtask per day with `time_type` |
+| `time_logs` | Legacy hours ledger (app auto-log + Excel import) |
+| `timesheet_upload_runs` | Audit trail for Excel upload batches |
+| `documents` | Files and links per customer |
+| `document_links` | Polymorphic join: document ↔ project / group / subtask |
 | `infra_servers` | Server inventory per customer |
-| `infra_links` | Polymorphic join: server ↔ project/group/subtask |
+| `infra_links` | Polymorphic join: server ↔ project / group / subtask |
+| `notifications` | Deadline alerts per user with read state |
+| `availability` | Per-user online status |
 
 ---
 
-## 🔒 Security Highlights
+## 🗺️ Migrations
 
-- Session cookies are `httpOnly`, `secure` (in production), and `sameSite: strict`
-- Auth endpoints are rate-limited (20 requests / 15 min per IP)
-- File uploads are served through an authenticated endpoint — no public static access
-- Path traversal protection on file serving routes
-- `SESSION_SECRET` is required in production (app exits if missing)
-- Role-based access enforced on all sensitive routes via `requireRole` middleware
-- Excel upload permission check: Members can only submit rows for their own account; mismatched rows are rejected per-row with a clear error, never silently dropped
+All migrations are idempotent Node.js scripts. Run them in order on a fresh database or to bring an existing schema up to date.
+
+| File | What it does |
+|---|---|
+| `001_analytics_timesheet_refactor.js` | Adds `estimated_hours` columns; creates `task_assignments` and `timesheet_entries` tables |
+| `002_assignment_membership_architecture.js` | Creates `project_members`; adds `assignee_id` to `activity_groups`; adds `unassigned_date` and `inherited_from_task_id` to `task_assignments` |
+| `003_timesheet_entries_refactor.js` | Drops `billable_hours`; adds `time_type` ENUM to `timesheet_entries` |
+| `004_fix_task_assignments_unique_key.js` | Replaces narrow `(user_id, subtask_id)` unique key with `(user_id, subtask_id, unassigned_date)` to support soft-delete re-assignment |
 
 ---
 
-## 🤝 Contributing
+## 🔒 Security
 
-Pull requests are welcome. For major changes, open an issue first to discuss what you'd like to change.
+- Session cookies: `httpOnly`, `secure` in production, `sameSite: strict`
+- Auth endpoints rate-limited: 20 requests / 15 min per IP
+- File uploads served through authenticated endpoint — no public static access
+- Path traversal protection on all file serving routes
+- `SESSION_SECRET` required in production (server exits if missing)
+- RBAC enforced at route middleware and controller/model level
+- `role_version` invalidation — active sessions are kicked when a user's role changes
+- Assignment permission gate — Members can only assign or upload for themselves; mismatched rows are rejected per-row with a clear reason, never silently dropped
 
 ---
 
 <div align="center">
 
-⭐ **Star this repo if it's useful to you!** It helps others find it.
+Built with ❤️ by [Erasmith Technologies](https://erasmith.com)
 
 </div>

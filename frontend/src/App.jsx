@@ -5,7 +5,7 @@ import Customers         from './components/Customers/Customers';
 import MyTasks           from './components/MyTasks/MyTasks';
 import Users             from './components/Users/Users';
 import AccessManagement  from './components/AccessManagement/AccessManagement';
-import Reports           from './components/Reports/Reports';
+import Timesheet         from './components/Timesheet/Timesheet';
 import Analytics         from './components/Analytics/Analytics';
 import Login             from './components/Login/Login';
 import NotificationsPage from './components/Notifications/NotificationsPage';
@@ -35,14 +35,14 @@ function App() {
             <Route path="/my-tasks" element={
               <ProtectedRoute><MyTasks /></ProtectedRoute>
             } />
+            <Route path="/timesheet" element={
+              <ProtectedRoute><Timesheet /></ProtectedRoute>
+            } />
             <Route path="/users" element={
               <ProtectedRoute requiredRole="MANAGER"><Users /></ProtectedRoute>
             } />
             <Route path="/access" element={
               <ProtectedRoute requiredRole="ADMIN"><AccessManagement /></ProtectedRoute>
-            } />
-            <Route path="/reports" element={
-              <ProtectedRoute requiredRole="MANAGER"><Reports /></ProtectedRoute>
             } />
             <Route path="/analytics" element={
               <ProtectedRoute requiredRole="ADMIN"><Analytics /></ProtectedRoute>

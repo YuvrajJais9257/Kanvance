@@ -1,4 +1,9 @@
 const pool = require("../config/db");
+const {
+  EFFECTIVE_OWNER_ID_SQL,
+  EFFECTIVE_OWNER_NAME_SQL,
+  INHERITED_FLAG_SQL,
+} = require("./assignment.model");
 
 // Project templates — auto-inserted on project creation
 const TEMPLATES = {
@@ -178,7 +183,18 @@ exports.getById = async (id) => {
        p.status,
        p.start_date,
        p.due_date,
-       p.notes
+       p.notes,
+       p.estimated_hours,
+       (SELECT ROUND(COALESCE(SUM(te.hours_logged), 0), 2)
+        FROM timesheet_entries te
+        JOIN subtasks s2         ON s2.id  = te.subtask_id
+        JOIN activity_groups ag2 ON ag2.id = s2.group_id
+        WHERE ag2.project_id = p.id) AS actual_hours_logged,
+       (SELECT ROUND(COALESCE(SUM(te.hours_logged), 0) - COALESCE(p.estimated_hours, 0), 2)
+        FROM timesheet_entries te
+        JOIN subtasks s2         ON s2.id  = te.subtask_id
+        JOIN activity_groups ag2 ON ag2.id = s2.group_id
+        WHERE ag2.project_id = p.id) AS variance
      FROM projects p
      JOIN customers c ON c.id = p.customer_id
      LEFT JOIN users u ON u.id = p.owner_id
@@ -193,7 +209,8 @@ exports.getById = async (id) => {
     [id]
   );
 
-  // Subtasks for all groups in one query
+  // Subtasks for all groups in one query — includes Effective_Owner resolution
+  // Requirements: 5.2, 5.3, 6.7
   const groupIds = groups.map((g) => g.id);
   let subtasks = [];
   if (groupIds.length) {
@@ -202,20 +219,58 @@ exports.getById = async (id) => {
       `SELECT
          s.id, s.group_id, s.name, s.status, s.due_date,
          s.assignee_id,
-         CASE WHEN s.assignee_id IS NULL THEN p.owner_id ELSE s.assignee_id END AS effective_assignee_id,
-         CASE WHEN s.assignee_id IS NULL THEN u_owner.name ELSE u_assign.name END AS assignee_name,
-         CASE WHEN s.assignee_id IS NULL AND p.owner_id IS NOT NULL THEN 1 ELSE 0 END AS inherited,
+         ${EFFECTIVE_OWNER_ID_SQL}   AS effective_assignee_id,
+         ${EFFECTIVE_OWNER_NAME_SQL} AS effective_assignee_name,
+         ${INHERITED_FLAG_SQL}       AS inherited,
          s.flag_type, s.flag_reason, s.flag_waiting_on, s.position
        FROM subtasks s
-       JOIN activity_groups ag ON ag.id = s.group_id
-       JOIN projects p         ON p.id  = ag.project_id
-       LEFT JOIN users u_assign ON u_assign.id = s.assignee_id
-       LEFT JOIN users u_owner  ON u_owner.id  = p.owner_id
+       JOIN activity_groups ag  ON ag.id  = s.group_id
+       JOIN projects p          ON p.id   = ag.project_id
+       LEFT JOIN users u_ag     ON u_ag.id   = ag.assignee_id
+       LEFT JOIN users u_proj   ON u_proj.id = p.owner_id
        WHERE s.group_id IN (${placeholders})
        ORDER BY s.position`,
       groupIds
     );
     subtasks = rows;
+
+    // Secondary query: fetch all active assignees for these subtasks and merge
+    // as assignees: [{ user_id, user_name }] on each subtask object.
+    // Requirements: 6.7
+    const subtaskIds = subtasks.map((s) => s.id);
+    if (subtaskIds.length) {
+      const stPlaceholders = subtaskIds.map(() => "?").join(",");
+      const [assigneeRows] = await pool.execute(
+        `SELECT ta.subtask_id, ta.user_id, u.name AS user_name
+         FROM task_assignments ta
+         JOIN users u ON u.id = ta.user_id
+         WHERE ta.subtask_id IN (${stPlaceholders})
+           AND ta.unassigned_date IS NULL
+         ORDER BY ta.assigned_date ASC`,
+        subtaskIds
+      );
+
+      // Group assignee rows by subtask_id
+      const assigneesBySubtask = new Map();
+      for (const row of assigneeRows) {
+        if (!assigneesBySubtask.has(row.subtask_id)) {
+          assigneesBySubtask.set(row.subtask_id, []);
+        }
+        assigneesBySubtask.get(row.subtask_id).push({
+          user_id: row.user_id,
+          user_name: row.user_name,
+        });
+      }
+
+      // Merge assignees array onto each subtask
+      for (const st of subtasks) {
+        st.assignees = assigneesBySubtask.get(st.id) ?? [];
+      }
+    } else {
+      for (const st of subtasks) {
+        st.assignees = [];
+      }
+    }
   }
 
   // Count unassigned subtasks for the warning banner

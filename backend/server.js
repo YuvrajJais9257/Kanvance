@@ -32,9 +32,9 @@ const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
 // Support comma-separated list of allowed origins
 const allowedOrigins = FRONTEND_URL.split(",").map((o) => o.trim());
 
-// Matches any Vercel preview deployment for this project, e.g.:
+// Old Kanvance/Vercel preview URL kept for reference
 // kanvance-7o4nk4qq7-yuvraj-jaiswals-projects.vercel.app
-const VERCEL_PREVIEW_RE = /^https:\/\/kanvance-.*-yuvraj-jaiswals-projects\.vercel\.app$/;
+const VERCEL_PREVIEW_RE = /^https:\/\/eradesk-.*\.vercel\.app$/;
 
 function isOriginAllowed(origin) {
   if (!origin) return true; // curl, Postman, server-to-server
@@ -78,7 +78,7 @@ const authLimiter = rateLimit({
 
 /* ── Session ─────────────────────────────────────────────────── */
 app.use(session({
-  name:   "cyberark.sid",
+  name:   "eradesk.sid",
   secret: process.env.SESSION_SECRET || "dev_secret_change_in_production",
   resave: false,
   saveUninitialized: false,
@@ -107,7 +107,7 @@ app.use(session({
 })();
 
 /* ── Public routes ───────────────────────────────────────────── */
-app.get("/", (req, res) => res.send("CyberArk Practice Tracker API"));
+app.get("/", (req, res) => res.send("EraDesk API"));
 
 // Apply rate limiter to auth routes (S-2)
 app.use("/api/auth", authLimiter, require("./src/routers/auth.routes"));
@@ -218,8 +218,9 @@ app.use("/api/infra",      require("./src/routers/infra.routes"));
 app.use("/api/dashboard",  require("./src/routers/dashboard.routes"));
 app.use("/api/my-tasks",     require("./src/routers/myTasks.routes"));
 app.use("/api/availability",    require("./src/routers/availability.routes"));
-app.use("/api/timesheet",       require("./src/routers/timesheet.routes"));
-app.use("/api/analytics",       require("./src/routers/analytics.routes"));
+app.use("/api/timesheet",         require("./src/routers/timesheet.routes"));
+app.use("/api/timesheet-entries", require("./src/routers/timesheetEntries.routes"));
+app.use("/api/analytics",         require("./src/routers/analytics.routes"));
 app.use("/api/activity-logs",   require("./src/routers/activityLog.routes"));
 app.use("/api/reports",         require("./src/routers/reports.routes"));
 app.use("/api/notifications",   require("./src/routers/notifications.routes"));

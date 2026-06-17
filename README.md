@@ -275,6 +275,6 @@ All migrations are idempotent Node.js scripts. Run them in order on a fresh data
 
 <div align="center">
 
-Built with ❤️ by [Erasmith Technologies](https://erasmith.com)
+Built with ❤️ by Yuvraj Jaiswal
 
 </div>
